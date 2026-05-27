@@ -1,32 +1,40 @@
 # John architecture — Hamster's working summary
 
-**Pinned to John v0.1.12 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg Claude Code plugin as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
+**Pinned to John v0.1.15 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg Claude Code plugin as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
 
 ## What John is
 
 John (slug `joharnessburg`, AGPL-3.0) is a Claude Code plugin that wraps Claude Code in skills + hooks + slash commands + a Python toolkit, so a single long-running session can take unstructured input (books, regulations, mixed docs) through knowledge engineering and then app building. Architecture: **horizontal phases × vertical parallel subagents**.
 
-## Top-level layout (the only files inside the plugin)
+## Repository layout (v0.1.14+ marketplace + plugin subdir)
+
+The joharnessburg repo is BOTH a marketplace AND a plugin. The marketplace catalog lives at the repo root; the plugin itself lives in a subdirectory:
 
 ```
-joharnessburg/
+joharnessburg/                       # repo root (also the marketplace root)
 ├── .claude-plugin/
-│   ├── plugin.json        # Claude Code plugin manifest
-│   └── marketplace.json   # Lets the repo also act as a marketplace
-├── hooks/hooks.json       # Hook declarations
-├── skills/<26 skills>/    # The "fat" in thin-harness-fat-skills
-├── commands/<slash-cmds>/ # Slash commands
-├── scripts/<toolkit>.py   # Small Python utilities
-├── agents/<subagent>.md   # Subagent role definitions
-├── templates/             # Template-authoring docs + bundled examples
-└── README.md, LICENSE
+│   └── marketplace.json             # Marketplace catalog (references the plugin below)
+├── plugins/
+│   └── joharnessburg/                # The plugin itself
+│       ├── .claude-plugin/
+│       │   └── plugin.json           # Claude Code plugin manifest
+│       ├── hooks/hooks.json          # Hook declarations
+│       ├── skills/<26 skills>/       # The "fat" in thin-harness-fat-skills
+│       ├── commands/<slash-cmds>/    # Slash commands
+│       ├── scripts/<toolkit>.py      # Small Python utilities
+│       ├── agents/<subagent>.md      # Subagent role definitions
+│       └── templates/                # Bundled example templates + authoring docs
+├── README.md, README_ZH.md
+└── LICENSE
 ```
+
+When you fork via `scaffold_fork.py`, your fork mirrors this layout — you modify files inside `<fork>/plugins/joharnessburg/`, not at the fork root.
 
 **Outside the plugin (workspace level)**, joharnessburg ships alongside `local_clients/llm/` and `local_clients/ppx/` — external FastAPI servers wrapping SiliconFlow/DeepSeek and the `memect-ppx` parser. Plugin code reaches them via env vars (`$JOHN_LLM_CLIENT_URL`, `$JOHN_PPX_CLIENT_URL`). Templates do NOT ship local_clients — they live with the platform deployment.
 
 ## The 26 skills (grouped by role)
 
-Skills live at `joharnessburg/skills/<name>/SKILL.md` with optional `references/` subdirs. Templates can override (`skills/_override/<name>/`), add (`skills/<new>/`), or delete (`skills/_delete` file) any of these.
+Skills live at `plugins/joharnessburg/skills/<name>/SKILL.md` with optional `references/` subdirs. Templates can override (`skills/_override/<name>/`), add (`skills/<new>/`), or delete (`skills/_delete` file) any of these.
 
 **Orientation + working discipline (5)**
 - `using-john` — Top-level orientation. Layer-3 Claude reads this first.
@@ -64,30 +72,46 @@ Most templates won't touch the platform-* skills; they're conditional, loaded on
 
 ## Hooks
 
-`hooks/hooks.json` declares hooks that auto-fire during Claude Code sessions. As of v0.1.12, the primary hook is `PostToolUse` with matcher `Read|Bash|Write|Edit` — used for event-log discipline and workspace tracking. **Templates do NOT modify hooks.json** — that's core platform infrastructure.
+`hooks/hooks.json` declares hooks that auto-fire during Claude Code sessions. The primary hook is `PostToolUse` with matcher `Read|Bash|Write|Edit` — used for event-log discipline and workspace tracking. There's also a `SessionStart` hook that injects PLAN.md preview + endurance goal + loaded-template info into the session's initial context. **Templates do NOT modify hooks.json** — that's core platform infrastructure.
 
 ## Scripts (Python toolkit)
 
-`joharnessburg/scripts/` ships small stdlib-Python utilities. Notable ones Hamster Claude may need to know about:
+`plugins/joharnessburg/scripts/` ships small stdlib-Python utilities. Notable ones Hamster Claude may need to know about:
 
 - `init_workspace.py` — scaffolds a fresh John workspace (CLAUDE.md, PLAN.md, .john/). Reads `templates-active/plan_md_template.md` + `claude_addon.md` if present.
-- `apply_template.py` — applies a template diff to John's installed plugin; produces a merged plugin at `~/.claude/plugins/joharnessburg-applied/<name>/`.
-- `set_template.py` — manages which template is active in a workspace (atomic apply + workspace.json update).
+- `apply_template.py` — applies a template diff to John's installed plugin; produces a merged plugin at `~/.claude/plugins/joharnessburg-applied/<name>/`. Called by each template's `apply.sh`.
+- `reset_john.py` — wipes all merged plugins at `~/.claude/plugins/joharnessburg-applied/`. Use to clean state between template tests.
 - `reduce_events.py` — deterministic reducer for the event log; supports `--dry-run`.
 - `ppx_parse.py` — thin HTTP client to the local `local_clients/ppx/` FastAPI server.
 - `markitdown_parse.py` — wrapper around the `markitdown` library for non-PDF parsing.
 - `parse_govcn_html.py` — gov.cn HTML fallback parser.
+- `workspace_status.py` — prints workspace state + detects "loaded template" from `$CLAUDE_PLUGIN_ROOT`.
+- `session_start_hook.py` + `post_tool_use_hook.py` + `precompact_hook.py` — wire into Claude Code's hook events.
+- `archive_workspace.py` — bundle a finished John workspace into a zip.
 
 Templates can ADD scripts but cannot override existing ones (additive-only; the collision policy added in v0.1.9 enforces this).
 
-## Templates — the diff-script architecture (v0.1.7+)
+## Slash commands
 
-A John template is a directory at `joharnessburg/templates/<name>/` containing a *diff* against original John. Layout:
+`plugins/joharnessburg/commands/` ships:
+
+- `/joharnessburg-init` — scaffold a workspace in cwd.
+- `/joharnessburg-status` — print current phase + progress.
+- `/joharnessburg-archive` — archive a finished workspace.
+- `/endurance` — set or recall the session's endurance goal.
+
+(v0.1.15 removed `/joharnessburg-template`. Templates are now installed + applied via apply.sh + launched via `--plugin-dir`; see "Templates" below.)
+
+## Templates — the diff-script architecture (v0.1.7+, simplified at v0.1.15)
+
+A John template is a directory at `~/.claude/plugins/joharnessburg-templates/<name>/` (user-scope install location) containing a *diff* against original John. The bundled examples live at `plugins/joharnessburg/templates/examples/<name>/` inside the joharnessburg repo for reference.
+
+Template layout:
 
 ```
-templates/<name>/
+<template>/
 ├── template.json                       # required: name, version, description, requires_john (informational)
-├── apply.sh                            # required: symlink to joharnessburg/templates/apply.sh
+├── apply.sh                            # required: symlink/copy of joharnessburg/plugins/joharnessburg/templates/apply.sh
 ├── plan_md_template.md                 # optional: starter PLAN.md skeleton
 ├── claude_addon.md                     # optional: appended to scaffolded CLAUDE.md
 ├── skills/
@@ -99,7 +123,15 @@ templates/<name>/
 └── agents/<new-agent>.md               # additive only
 ```
 
-`apply_template.py` produces `~/.claude/plugins/joharnessburg-applied/<name>/` — a merged plugin Claude Code launches with `claude --plugin-dir <merged-dir>`. The merge copies original John wholesale, then layers the template's diffs on top. Multiple templates can coexist as separate merged dirs (v0.1.8 per-session isolation).
+The canonical flow (v0.1.15+):
+
+1. **Install** the template at `~/.claude/plugins/joharnessburg-templates/<name>/` (user runs `cp -R` or `ln -s` manually).
+2. **Apply** by running the template's `apply.sh`. This produces a merged plugin at `~/.claude/plugins/joharnessburg-applied/<name>/`. apply.sh prints the launch command on stderr at success.
+3. **Launch** Claude with `claude --plugin-dir ~/.claude/plugins/joharnessburg-applied/<name>/`. The merged plugin IS John for that session — all skills load equally, no special template layer.
+4. **Switch** = exit, optionally apply a different template, relaunch with a different `--plugin-dir`. Multiple merged dirs at `joharnessburg-applied/<name>/` coexist freely (parallel sessions with different templates work).
+5. **Reset** = `rm -rf ~/.claude/plugins/joharnessburg-applied/` (or call `reset_john.py`).
+
+There is **no per-workspace "active template" state** (the v0.1.12 `active_template` field in `workspace.json` was removed at v0.1.15). The plugin loaded at session start IS the template — `$CLAUDE_PLUGIN_ROOT` is the source of truth.
 
 **What templates CAN do**:
 - Override existing skills (with full replacement under `skills/_override/`).
@@ -136,18 +168,21 @@ When the tech team ships production servers, the URL env vars get swapped — no
 
 ## Subagent definitions
 
-`joharnessburg/agents/` contains subagent role definitions used by `subagent-dispatch`. Notable ones include `knowledge-extractor`, `schema-designer`, `code-quality-reviewer`. Templates can ADD agents (additive only); they can't override existing ones via the additive-collision policy.
+`plugins/joharnessburg/agents/` contains subagent role definitions used by `subagent-dispatch`. Notable ones include `knowledge-extractor`, `schema-designer`, `code-quality-reviewer`. Templates can ADD agents (additive only); they can't override existing ones via the additive-collision policy.
 
 ## How a layer-3 John session typically flows
 
 (For your mental model — you, Hamster Claude, are designing the template that *shapes* this flow.)
 
-1. User runs `claude` in a project workspace where `joharnessburg-applied/<template>` is installed.
-2. `using-john` skill triggers; layer-3 Claude reads it + PLAN.md + CLAUDE.md.
-3. `init_workspace.py` (or its `/joharnessburg-init` command) scaffolds `.john/`, PLAN.md, CLAUDE.md from `templates-active/`.
-4. Layer-3 Claude works through the phases declared in PLAN.md, using ralph_loop to advance, dispatching subagents for parallel work per phase, writing events to the log, reading reduced state.
-5. Each phase typically: read inputs (parsing skill), chunk (chunking), extract knowledge (knowledge-extraction with subagents), rewrite/dedupe (knowledge-rewrite), package as skills (packaging), eventually build the app (app-design-thinking, subsite-builder).
-6. Final output: a working app shipped to the team's platform (via platform-* skills) or run locally.
+1. User has installed John (`claude plugin install joharnessburg@joharnessburg`) and optionally a template at `~/.claude/plugins/joharnessburg-templates/<template>/`.
+2. User has run the template's `apply.sh` (producing `~/.claude/plugins/joharnessburg-applied/<template>/`).
+3. User runs `claude --plugin-dir ~/.claude/plugins/joharnessburg-applied/<template>/` in a project workspace.
+4. `SessionStart` hook fires, injects PLAN.md preview + endurance goal + loaded-template info.
+5. `using-john` skill triggers; layer-3 Claude reads it + PLAN.md + CLAUDE.md.
+6. `init_workspace.py` (or its `/joharnessburg-init` command) scaffolds `.john/`, PLAN.md, CLAUDE.md from `templates-active/`.
+7. Layer-3 Claude works through the phases declared in PLAN.md, using ralph_loop to advance, dispatching subagents for parallel work per phase, writing events to the log, reading reduced state.
+8. Each phase typically: read inputs (parsing skill), chunk (chunking), extract knowledge (knowledge-extraction with subagents), rewrite/dedupe (knowledge-rewrite), package as skills (packaging), eventually build the app (app-design-thinking, subsite-builder).
+9. Final output: a working app shipped to the team's platform (via platform-* skills) or run locally.
 
 Your template customizes any of these moves the apps in your family need to be done differently.
 
@@ -155,11 +190,11 @@ Your template customizes any of these moves the apps in your family need to be d
 
 ## When this rots
 
-This summary is pinned to John v0.1.12. When John updates, this doc will drift. To recover:
+This summary is pinned to John v0.1.15. When John updates, this doc will drift. To recover:
 
 1. Re-read live `$JOHARNESSBURG_PATH/PLAN.md` (the workspace plan in the joharnessburg repo).
-2. Re-read live `$JOHARNESSBURG_PATH/README.md` and `$JOHARNESSBURG_PATH/templates/README.md`.
-3. `ls $JOHARNESSBURG_PATH/skills/` — confirm the skill list against the grouping above. Any new skills since v0.1.12 may belong in additional categories.
+2. Re-read live `$JOHARNESSBURG_PATH/README.md` and `$JOHARNESSBURG_PATH/plugins/joharnessburg/templates/README.md`.
+3. `ls $JOHARNESSBURG_PATH/plugins/joharnessburg/skills/` — confirm the skill list against the grouping above. Any new skills since v0.1.15 may belong in additional categories.
 4. Run `git log --oneline -20` in `$JOHARNESSBURG_PATH` to see recent changes.
 
 If you're authoring a template against a substantially newer John, propose to the user that Hamster's `john_architecture.md` reference be refreshed in workspace `/skills/hamster-workshop/references/` and re-shipped in the next Hamster version.
