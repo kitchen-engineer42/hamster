@@ -48,9 +48,15 @@ def main() -> int:
     if not (j_path / ".git").exists():
         err(f"joharnessburg path is not a git repo: {j_path}")
         return 1
-    if not (j_path / ".claude-plugin" / "plugin.json").exists():
-        err(f"joharnessburg path doesn't look like a John plugin "
-            f"(missing .claude-plugin/plugin.json): {j_path}")
+    # Layout-agnostic plugin check: find a plugin.json anywhere in the tree.
+    # This handles both v0.1.12-style (plugin.json at .claude-plugin/) and
+    # v0.1.14+-style (plugin.json at plugins/<name>/.claude-plugin/) and any
+    # future layouts. The script itself doesn't care where in the tree the
+    # plugin lives — it just clones the whole repo.
+    plugin_manifests = list(j_path.glob("**/.claude-plugin/plugin.json"))
+    if not plugin_manifests:
+        err(f"joharnessburg path doesn't look like a Claude Code plugin "
+            f"(no .claude-plugin/plugin.json found under {j_path})")
         return 1
 
     if fork_path.exists():
