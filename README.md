@@ -61,13 +61,18 @@ hamster/
 ├── CLAUDE.md                     # Hamster session framing (copied to your working dir)
 ├── VERSION                       # plain text version pointer
 ├── bootstrap_hamster.sh          # convenience setup script
-└── skills/
-    ├── hamster-orientation/
-    ├── hamster-drawing-board/
-    ├── hamster-product-thinking/
-    ├── hamster-workshop/
-    └── hamster-packaging/
+├── skills/
+│   ├── hamster-orientation/
+│   ├── hamster-drawing-board/
+│   ├── hamster-product-thinking/
+│   ├── hamster-workshop/
+│   └── hamster-packaging/
+└── examples/                     # reference John templates (functional demonstrators of the diff format)
+    ├── slides-from-textbook/     # lighter — 1 override + 1 addition
+    └── doc-verification/         # heavier, KC-style — 2 overrides + 2 additions
 ```
+
+The `examples/` dir holds complete John template directories that Hamster Claude reads as reference during the workshop phase. They live here (not in joharnessburg) because they're authoring-time references, not John runtime content — see `skills/hamster-workshop/SKILL.md` for how they're used.
 
 ## License
 

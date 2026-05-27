@@ -104,7 +104,7 @@ Templates can ADD scripts but cannot override existing ones (additive-only; the 
 
 ## Templates — the diff-script architecture (v0.1.7+, simplified at v0.1.15)
 
-A John template is a directory at `~/.claude/plugins/joharnessburg-templates/<name>/` (user-scope install location) containing a *diff* against original John. The bundled examples live at `plugins/joharnessburg/templates/examples/<name>/` inside the joharnessburg repo for reference.
+A John template is a directory at `~/.claude/plugins/joharnessburg-templates/<name>/` (user-scope install location) containing a *diff* against original John. Reference example templates live in **Hamster's own repo** at `<hamster-checkout>/examples/{slides-from-textbook,doc-verification}/` — that's your nearest place to see the diff format in practice. (Until joharnessburg v0.1.17 these examples lived inside joharnessburg's `templates/examples/`, but they were getting copied into every merged plugin at apply time and leaking guidance into layer-3 sessions. Now they live with Hamster, the authoring tool that consumes them.)
 
 Template layout:
 
