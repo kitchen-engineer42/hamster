@@ -1,12 +1,12 @@
 # John architecture — Hamster's working summary
 
-**Pinned to John v0.1.15 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg Claude Code plugin as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
+**Pinned to John v0.1.17 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg Claude Code plugin as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
 
 ## What John is
 
 John (slug `joharnessburg`, AGPL-3.0) is a Claude Code plugin that wraps Claude Code in skills + hooks + slash commands + a Python toolkit, so a single long-running session can take unstructured input (books, regulations, mixed docs) through knowledge engineering and then app building. Architecture: **horizontal phases × vertical parallel subagents**.
 
-## Repository layout (v0.1.14+ marketplace + plugin subdir)
+## Repository layout (marketplace + plugin subdir)
 
 The joharnessburg repo is BOTH a marketplace AND a plugin. The marketplace catalog lives at the repo root; the plugin itself lives in a subdirectory:
 
@@ -89,7 +89,7 @@ Most templates won't touch the platform-* skills; they're conditional, loaded on
 - `session_start_hook.py` + `post_tool_use_hook.py` + `precompact_hook.py` — wire into Claude Code's hook events.
 - `archive_workspace.py` — bundle a finished John workspace into a zip.
 
-Templates can ADD scripts but cannot override existing ones (additive-only; the collision policy added in v0.1.9 enforces this).
+Templates can ADD scripts but cannot override existing ones (additive-only; the collision policy enforces this).
 
 ## Slash commands
 
@@ -100,11 +100,11 @@ Templates can ADD scripts but cannot override existing ones (additive-only; the 
 - `/joharnessburg:archive` — archive a finished workspace.
 - `/endurance` — set or recall the session's endurance goal.
 
-(v0.1.15 removed `/joharnessburg-template`. Templates are now installed + applied via apply.sh + launched via `--plugin-dir`; see "Templates" below.)
+Templates are installed + applied via `apply.sh` and launched via `--plugin-dir`; see "Templates" below.
 
-## Templates — the diff-script architecture (v0.1.7+, simplified at v0.1.15)
+## Templates — the diff-script architecture
 
-A John template is a directory at `~/.claude/plugins/joharnessburg-templates/<name>/` (user-scope install location) containing a *diff* against original John. Reference example templates live in **Hamster's own repo** at `<hamster-checkout>/examples/{slides-from-textbook,doc-verification}/` — that's your nearest place to see the diff format in practice. (Until joharnessburg v0.1.17 these examples lived inside joharnessburg's `templates/examples/`, but they were getting copied into every merged plugin at apply time and leaking guidance into layer-3 sessions. Now they live with Hamster, the authoring tool that consumes them.)
+A John template is a directory at `~/.claude/plugins/joharnessburg-templates/<name>/` (user-scope install location) containing a *diff* against original John. Reference example templates live in **Hamster's own repo** at `<hamster-checkout>/examples/{slides-from-textbook,doc-verification}/` — that's your nearest place to see the diff format in practice.
 
 Template layout:
 
@@ -123,7 +123,7 @@ Template layout:
 └── agents/<new-agent>.md               # additive only
 ```
 
-The canonical flow (v0.1.15+):
+The canonical flow:
 
 1. **Install** the template at `~/.claude/plugins/joharnessburg-templates/<name>/` (user runs `cp -R` or `ln -s` manually).
 2. **Apply** by running the template's `apply.sh`. This produces a merged plugin at `~/.claude/plugins/joharnessburg-applied/<name>/`. apply.sh prints the launch command on stderr at success.
@@ -131,7 +131,7 @@ The canonical flow (v0.1.15+):
 4. **Switch** = exit, optionally apply a different template, relaunch with a different `--plugin-dir`. Multiple merged dirs at `joharnessburg-applied/<name>/` coexist freely (parallel sessions with different templates work).
 5. **Reset** = `rm -rf ~/.claude/plugins/joharnessburg-applied/` (or call `reset_john.py`).
 
-There is **no per-workspace "active template" state** (the v0.1.12 `active_template` field in `workspace.json` was removed at v0.1.15). The plugin loaded at session start IS the template — `$CLAUDE_PLUGIN_ROOT` is the source of truth.
+There is **no per-workspace "active template" state**. The plugin loaded at session start IS the template — `$CLAUDE_PLUGIN_ROOT` is the source of truth.
 
 **What templates CAN do**:
 - Override existing skills (with full replacement under `skills/_override/`).
@@ -190,11 +190,11 @@ Your template customizes any of these moves the apps in your family need to be d
 
 ## When this rots
 
-This summary is pinned to John v0.1.15. When John updates, this doc will drift. To recover:
+This summary is pinned to John v0.1.17. When John updates, this doc will drift. To recover:
 
 1. Re-read live `$JOHARNESSBURG_PATH/PLAN.md` (the workspace plan in the joharnessburg repo).
 2. Re-read live `$JOHARNESSBURG_PATH/README.md` and `$JOHARNESSBURG_PATH/plugins/joharnessburg/templates/README.md`.
-3. `ls $JOHARNESSBURG_PATH/plugins/joharnessburg/skills/` — confirm the skill list against the grouping above. Any new skills since v0.1.15 may belong in additional categories.
+3. `ls $JOHARNESSBURG_PATH/plugins/joharnessburg/skills/` — confirm the skill list against the grouping above. Any new skills may belong in additional categories.
 4. Run `git log --oneline -20` in `$JOHARNESSBURG_PATH` to see recent changes.
 
 If you're authoring a template against a substantially newer John, propose to the user that Hamster's `john_architecture.md` reference be refreshed in workspace `/skills/hamster-workshop/references/` and re-shipped in the next Hamster version.

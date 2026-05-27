@@ -2,7 +2,7 @@
 
 John ships a small set of **platform tools** — utilities that live at workspace level (not inside the plugin) and serve any template that needs them. Templates *use* these tools; templates do *not* ship them. If a template needs a tool the platform doesn't have, the right move is to surface the gap to the user (who decides whether to add it to the platform), not to bundle the tool inside the template.
 
-## Current platform tools (as of John v0.1.12)
+## Current platform tools (as of John v0.1.17)
 
 ### `local_clients/llm/` — workerLLM client
 
@@ -20,7 +20,7 @@ A FastAPI server wrapping `memect-ppx` (the `ppx` engine).
 
 - **Plugin-side caller**: `$JOHN_PPX_CLIENT_URL` env var (default `http://localhost:8501`). The plugin's `parsing` skill + `scripts/ppx_parse.py` are the integration points.
 - **API contract** (live): see `local_clients/ppx/README.md` in the workspace.
-- **Endpoints**: `GET /healthz`, `POST /parse` (input_path, output_dir, backend, ocr, table — Pydantic-validated literals as of v0.1.9).
+- **Endpoints**: `GET /healthz`, `POST /parse` (input_path, output_dir, backend, ocr, table — Pydantic-validated literals).
 - **When to embed in a template**: when produced apps (or the John build phase) need to parse PDFs — especially those with OCR, complex tables, or formula content. The parser is heavyweight; only reach for it when markitdown can't handle the format.
 - **When NOT to embed**: for non-PDF inputs (markdown, HTML, plaintext, DOCX), the `parsing` skill routes to `markitdown_parse.py` or `parse_govcn_html.py` instead. Don't force ppx where it adds latency without benefit.
 
@@ -38,7 +38,7 @@ So: if a template needs a tool that's already in the platform, embed its usage (
 
 You'll spot patterns where the inputs hint at a tool the platform doesn't have:
 
-- "Recordings need to be transcribed" → no ASR tool. (Hamster v0.1.0 assumes inputs are pre-transcribed; users handle ASR upstream.)
+- "Recordings need to be transcribed" → no ASR tool. (Hamster assumes inputs are pre-transcribed; users handle ASR upstream.)
 - "Need to call a domain-specific API mid-app-runtime" → no domain-API wrapper.
 - "Need to render LaTeX/OMML formulas faithfully" → not in scope; ppx handles structured doc parsing but formulas are tricky.
 
@@ -60,10 +60,10 @@ This keeps the template portable. A template that hardcodes "use our specific in
 
 ## When this rots
 
-The tool list above is pinned to John v0.1.12. The platform may grow. To re-check:
+The tool list above is pinned to John v0.1.17. The platform may grow. To re-check:
 
 1. `ls $JOHARNESSBURG_PATH/../local_clients/` — see what clients exist locally.
 2. Check joharnessburg/PLAN.md for "out of scope" → those tools haven't landed yet.
 3. Read the latest `using-john` skill — it points to current tool integrations.
 
-If a new tool has landed since v0.1.12, propose to the user that Hamster's `tool_inventory.md` be refreshed.
+If a new tool has landed, propose to the user that Hamster's `tool_inventory.md` be refreshed.
