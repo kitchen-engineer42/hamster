@@ -1,6 +1,6 @@
 # John architecture — Hamster's working summary
 
-**Pinned to John v0.1.19 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg Claude Code plugin as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
+**Pinned to John v0.1.20 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg Claude Code plugin as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
 
 ## What John is
 
@@ -95,9 +95,9 @@ Templates can ADD scripts but cannot override existing ones (additive-only; the 
 
 `plugins/joharnessburg/commands/` ships:
 
-- `/joharnessburg:init` — scaffold a workspace in cwd.
-- `/joharnessburg:status` — print current phase + progress.
-- `/joharnessburg:archive` — archive a finished workspace.
+- `/john:init` — scaffold a workspace in cwd.
+- `/john:status` — print current phase + progress.
+- `/john:archive` — archive a finished workspace.
 - `/endurance` — set or recall the session's endurance goal.
 
 Templates are installed + applied via `apply.sh` and launched via `--plugin-dir`; see "Templates" below.
@@ -174,12 +174,12 @@ When the tech team ships production servers, the URL env vars get swapped — no
 
 (For your mental model — you, Hamster Claude, are designing the template that *shapes* this flow.)
 
-1. User has installed John (`claude plugin install joharnessburg@joharnessburg`) and optionally a template at `~/.claude/plugins/joharnessburg-templates/<template>/`.
+1. User has installed John (`claude plugin install john@joharnessburg`) and optionally a template at `~/.claude/plugins/joharnessburg-templates/<template>/`.
 2. User has run the template's `apply.sh` (producing `~/.claude/plugins/joharnessburg-applied/<template>/`).
 3. User runs `claude --plugin-dir ~/.claude/plugins/joharnessburg-applied/<template>/` in a project workspace.
 4. `SessionStart` hook fires, injects PLAN.md preview + endurance goal + loaded-template info.
 5. `using-john` skill triggers; layer-3 Claude reads it + PLAN.md + CLAUDE.md.
-6. `init_workspace.py` (or its `/joharnessburg:init` command) scaffolds `.john/`, PLAN.md, CLAUDE.md from `templates-active/`.
+6. `init_workspace.py` (or its `/john:init` command) scaffolds `.john/`, PLAN.md, CLAUDE.md from `templates-active/`.
 7. Layer-3 Claude works through the phases declared in PLAN.md, using ralph_loop to advance, dispatching subagents for parallel work per phase, writing events to the log, reading reduced state.
 8. Each phase typically: read inputs (parsing skill), chunk (chunking), extract knowledge (knowledge-extraction with subagents), rewrite/dedupe (knowledge-rewrite), package as skills (packaging), eventually build the app (app-design-thinking, subsite-builder).
 9. Final output: a working app shipped to the team's platform (via platform-* skills) or run locally.
@@ -190,7 +190,7 @@ Your template customizes any of these moves the apps in your family need to be d
 
 ## When this rots
 
-This summary is pinned to John v0.1.19. When John updates, this doc will drift. To recover:
+This summary is pinned to John v0.1.20. When John updates, this doc will drift. To recover:
 
 1. Re-read live `$JOHARNESSBURG_PATH/PLAN.md` (the workspace plan in the joharnessburg repo).
 2. Re-read live `$JOHARNESSBURG_PATH/README.md` and `$JOHARNESSBURG_PATH/plugins/joharnessburg/templates/README.md`.

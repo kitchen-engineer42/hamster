@@ -2,7 +2,7 @@
 
 John ships a small set of **platform tools** — utilities that live at workspace level (not inside the plugin) and serve any template that needs them. Templates *use* these tools; templates do *not* ship them. If a template needs a tool the platform doesn't have, the right move is to surface the gap to the user (who decides whether to add it to the platform), not to bundle the tool inside the template.
 
-## Current platform tools (as of John v0.1.19)
+## Current platform tools (as of John v0.1.20)
 
 ### `local_clients/llm/` — workerLLM client
 
@@ -60,7 +60,7 @@ This keeps the template portable. A template that hardcodes "use our specific in
 
 ## When this rots
 
-The tool list above is pinned to John v0.1.19. The platform may grow. To re-check:
+The tool list above is pinned to John v0.1.20. The platform may grow. To re-check:
 
 1. `ls $JOHARNESSBURG_PATH/../local_clients/` — see what clients exist locally.
 2. Check joharnessburg/PLAN.md for "out of scope" → those tools haven't landed yet.
