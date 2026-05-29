@@ -1,8 +1,8 @@
 # The four structures — template-level framing
 
-This is Hamster's adaptation of John's spec §4 ("the four structures we have in each project of John"). John's spec uses the four structures to describe a *project* (one app being built). Hamster uses them to describe a *template* (a family of apps that share enough shape to share a harness).
+This is Hamster's adaptation of John's four-structures framing. John uses the four structures to describe a *project* (one app being built). Hamster uses them to describe a *template* (a family of apps that share enough shape to share a harness).
 
-## The four structures (verbatim from John spec §4)
+## The four structures
 
 > the format of knowledge, the schema of knowledge, the function structure of app, the building pipeline of app.
 >

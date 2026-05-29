@@ -76,7 +76,7 @@ Phase 6 (production QC) refines this; Phase 4 lays the foundation.
 
 - It doesn't author rules. That's [[rule-extraction]] in Phase 2.
 - It doesn't package rules. That's the template-overridden [[packaging]] in Phase 3.
-- It doesn't distill rules into cheap-LLM workflows. That's Phase 5 (optional, beyond M5 scope).
+- It doesn't distill rules into cheap-LLM workflows. That's Phase 5 (optional, beyond this template's scope).
 
 ## Cross-references
 

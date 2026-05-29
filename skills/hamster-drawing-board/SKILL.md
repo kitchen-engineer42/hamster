@@ -32,7 +32,7 @@ The subagent's report comes back as the tool result. You decide what's worth a n
 
 ## Meta vs specific — at the content level
 
-You'll see this distinction in `initial_spec_hamster.md` if you read it: *meta* means "ideas about the template itself" and *specific* means "sample materials for what apps process." The classification matters because:
+The distinction: *meta* means "ideas about the template itself" and *specific* means "sample materials for what apps process." The classification matters because:
 
 - **Meta** content gets distilled into the template's design directly. ("We want a glossary-first ontology" → the template fixes glossary as the first knowledge format.)
 - **Specific** content gets explored, summarized, distilled, *then* used to shape the template. ("Here's a sample rule doc" → you don't ship that doc in the template, but you might fix the schema shape based on what fields the rules tend to have.)
@@ -52,7 +52,7 @@ For each piece of evidence (or each subagent finding), ask: which of the four st
 3. **Runtime structure** — the pipeline of the *produced apps* (parse → chunk → apply → output).
 4. **Building pipeline** — the phases John's ralph_loop runs through to build each app, what each phase's subagents do.
 
-`references/four_structures.md` has the full framing — read it once before going deep. The key shift from John's spec §4 is that **you fix the shape, the runtime fills in content**.
+`references/four_structures.md` has the full framing — read it once before going deep. The key shift from John's four-structures framing is that **you fix the shape, the runtime fills in content**.
 
 Often a single piece of evidence hints at multiple structures. That's the point — they affect each other. The format of knowledge constrains the schema; the schema constrains the runtime; the runtime constrains the building pipeline.
 

@@ -21,7 +21,7 @@ Why this design: it lets you think in terms of "modify John" (which is intuitive
 
 Three access patterns, used together:
 
-1. **The bundled architecture summary** (`references/john_architecture.md`) — your always-have-in-mind baseline. Read it whenever you need to recall the layout, the 26 skills, the hooks contract, the templates diff format. Pinned to John v0.1.17.
+1. **The bundled architecture summary** (`references/john_architecture.md`) — your always-have-in-mind baseline. Read it whenever you need to recall the layout, the 26 skills, the hooks contract, the templates diff format. Pinned to John v0.1.19.
 
 2. **Reference example templates** at `<hamster-checkout>/examples/{slides-from-textbook,doc-verification}/` (in your loaded Hamster repo, typically at `~/hamster-cli/examples/` or wherever the user installed Hamster). Each example is a complete template directory with `template.json`, `apply.sh`, `claude_addon.md`, `plan_md_template.md`, and `skills/_override/` + additive skill subdirs — i.e., exactly the shape your `package_template.py` output should have. Use them to ground your sense of the diff format before authoring. **Don't copy them wholesale** — they're functional demonstrators, not production-ready, and your template should be informed by your inputs, not by mimicking the example.
 

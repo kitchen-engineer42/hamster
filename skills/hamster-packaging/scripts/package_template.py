@@ -23,7 +23,12 @@ Output structure (per joharnessburg/templates/README.md):
     agents/<new-file>.md ... (additive only)
     plan_md_template.md (if present at fork root)
     claude_addon.md (if present at fork root)
-    .hamster/package_summary.json (provenance)
+
+Build provenance is written to <fork>/.hamster/package_summary.json (the fork is
+the builder's scratch), NOT into the shipped template — so built templates carry
+no dev-history or dev-machine paths. The fork's John copy may use either the flat
+(<=v0.1.12) or marketplace (v0.1.14+, plugins/<name>/) layout; paths are resolved
+accordingly. apply.sh defaults to <plugin-root>/templates/apply.sh.
 
 Exit codes:
   0 — success (warnings may have been emitted, see package_summary.json)
@@ -64,27 +69,63 @@ def run_git(args: list, cwd: Path) -> str:
     return result.stdout
 
 
-def get_joharnessburg_version(jpath: Path) -> str:
-    """Read version from joharnessburg's plugin.json. Returns 'unknown' if absent."""
-    plugin_json = jpath / ".claude-plugin" / "plugin.json"
-    if not plugin_json.exists():
+def resolve_plugin_root(fork: Path) -> tuple[Path | None, Path | None]:
+    """Locate the plugin dir inside a fork, layout-agnostically.
+
+    Returns (plugin_root, manifest_path). `plugin_root` is the dir that holds
+    skills/, scripts/, commands/, agents/, templates/ — i.e. the parent of the
+    `.claude-plugin/` that carries a plugin.json with a "version".
+
+    Handles both the pre-v0.1.14 flat layout (plugin.json at <fork>/.claude-plugin/)
+    and the v0.1.14+ marketplace layout (<fork>/plugins/<name>/.claude-plugin/),
+    where the top-level .claude-plugin/ holds only marketplace.json.
+    """
+    flat = fork / ".claude-plugin" / "plugin.json"
+    if flat.is_file():
+        return fork, flat
+    for manifest in sorted(fork.glob("plugins/*/.claude-plugin/plugin.json")):
+        return manifest.parent.parent, manifest
+    return None, None
+
+
+def get_joharnessburg_version(manifest: Path | None) -> str:
+    """Read version from a resolved plugin.json. Returns 'unknown' if absent."""
+    if manifest is None or not manifest.is_file():
         return "unknown"
     try:
-        return json.loads(plugin_json.read_text()).get("version", "unknown")
+        return json.loads(manifest.read_text(encoding="utf-8")).get("version", "unknown")
     except (json.JSONDecodeError, OSError):
         return "unknown"
 
 
-def classify_change(path: str, base_skills: set) -> dict:
-    """Classify a changed path. Returns dict with 'kind' and supporting fields.
+def strip_plugin_prefix(path: str, rel_prefix: str) -> str | None:
+    """Drop the leading `plugins/<name>/` prefix from a repo-relative diff path.
+
+    Returns the plugin-relative remainder, or None if `path` lies outside the
+    plugin subtree (e.g. a workspace file, when rel_prefix is non-empty).
+    """
+    if not rel_prefix:
+        return path
+    pfx = rel_prefix + "/"
+    if path.startswith(pfx):
+        return path[len(pfx):]
+    return None
+
+
+def classify_change(path: str, base_skills: set, rel_prefix: str) -> dict:
+    """Classify a changed (repo-relative) path. Returns dict with 'kind' + fields.
 
     kind ∈ {"override_skill", "add_skill", "additive", "template_root", "warn"}
     Note: deletion of a whole skill dir is detected later, not here.
     """
-    parts = path.split("/")
-
+    # Template-root files live at the fork root, outside the plugin subtree.
     if path in ("plan_md_template.md", "claude_addon.md"):
         return {"kind": "template_root", "filename": path}
+
+    inner = strip_plugin_prefix(path, rel_prefix)
+    if inner is None:
+        return {"kind": "warn", "path": path}
+    parts = inner.split("/")
 
     if parts[0] == "skills" and len(parts) >= 3:
         skill_name = parts[1]
@@ -93,19 +134,21 @@ def classify_change(path: str, base_skills: set) -> dict:
         return {"kind": "add_skill", "skill": skill_name}
 
     if parts[0] in ("scripts", "commands", "agents") and len(parts) >= 2:
-        return {"kind": "additive", "subdir": parts[0], "path": path}
+        return {"kind": "additive", "subdir": parts[0], "path": inner}
 
     return {"kind": "warn", "path": path}
 
 
-def inventory_base_skills(fork: Path, base_commit: str) -> set:
-    """Return the set of skill dir names that existed at base."""
-    out = run_git(["ls-tree", "--name-only", base_commit, "skills/"], cwd=fork)
+def inventory_base_skills(fork: Path, base_commit: str, rel_prefix: str) -> set:
+    """Return the set of skill dir names that existed at base (layout-agnostic)."""
+    pfx = f"{rel_prefix}/skills/" if rel_prefix else "skills/"
+    out = run_git(["ls-tree", "--name-only", base_commit, pfx], cwd=fork)
     skills = set()
     for line in out.splitlines():
-        parts = line.split("/")
-        if len(parts) == 2 and parts[0] == "skills" and parts[1]:
-            skills.add(parts[1])
+        if line.startswith(pfx):
+            name = line[len(pfx):].split("/")[0]
+            if name:
+                skills.add(name)
     return skills
 
 
@@ -173,6 +216,15 @@ def main() -> int:
         return 1
     base_commit = base_commit_file.read_text().strip()
 
+    plugin_root, manifest = resolve_plugin_root(fork)
+    if plugin_root is None:
+        err(f"could not find a plugin (.claude-plugin/plugin.json) inside fork: {fork}")
+        err("Expected either <fork>/.claude-plugin/plugin.json (flat) or "
+            "<fork>/plugins/<name>/.claude-plugin/plugin.json (marketplace layout).")
+        return 1
+    rel_prefix = plugin_root.relative_to(fork).as_posix()
+    rel_prefix = "" if rel_prefix == "." else rel_prefix
+
     if output.exists():
         err(f"output dir already exists: {output}")
         err("Refusing to overwrite. Delete it first if you want a fresh build.")
@@ -180,7 +232,7 @@ def main() -> int:
 
     apply_script = args.apply_script
     if apply_script is None:
-        apply_script = fork / "templates" / "apply.sh"
+        apply_script = plugin_root / "templates" / "apply.sh"
     apply_script = apply_script.resolve()
     if not apply_script.exists():
         err(f"apply.sh not found at: {apply_script}")
@@ -188,7 +240,7 @@ def main() -> int:
         return 1
 
     try:
-        base_skills = inventory_base_skills(fork, base_commit)
+        base_skills = inventory_base_skills(fork, base_commit, rel_prefix)
         changes = collect_changes(fork, base_commit)
     except RuntimeError as e:
         err(str(e))
@@ -197,7 +249,8 @@ def main() -> int:
     summary = {
         "base_commit": base_commit,
         "packaged_at": datetime.now(timezone.utc).isoformat(),
-        "requires_john": f">={get_joharnessburg_version(fork)}",
+        "requires_john": f">={get_joharnessburg_version(manifest)}",
+        "plugin_root": rel_prefix or ".",
         "translations": [],
         "warnings": [],
     }
@@ -209,12 +262,12 @@ def main() -> int:
     template_root_files = []  # list of filenames
 
     for status, path in changes:
-        c = classify_change(path, base_skills)
+        c = classify_change(path, base_skills, rel_prefix)
         kind = c["kind"]
 
         if kind == "override_skill":
             skill = c["skill"]
-            skill_dir = fork / "skills" / skill
+            skill_dir = plugin_root / "skills" / skill
             if not skill_dir.exists():
                 deleted_skills.add(skill)
             else:
@@ -239,7 +292,7 @@ def main() -> int:
                 })
                 warn(f"modification of {path} not template-supported; skipping")
             else:
-                additive_files.append(path)
+                additive_files.append(c["path"])
         elif kind == "template_root":
             template_root_files.append(c["filename"])
         elif kind == "warn":
@@ -253,7 +306,6 @@ def main() -> int:
             warn(f"{status} {path} not template-supported; skipping")
 
     output.mkdir(parents=True, exist_ok=False)
-    (output / ".hamster").mkdir()
 
     template_name = output.name
     description = args.description or f"Hamster-built template: {template_name}"
@@ -274,7 +326,13 @@ def main() -> int:
     except OSError:
         shutil.copy2(apply_script, apply_dest)
         info(f"  (apply.sh copied instead of symlinked; OK on platforms without symlink support)")
-    summary["translations"].append({"kind": "apply.sh", "source": str(apply_script)})
+    # Record the source relative to the fork when possible, to avoid leaking an
+    # absolute dev-machine path into provenance.
+    try:
+        apply_src_record = str(apply_script.relative_to(fork))
+    except ValueError:
+        apply_src_record = apply_script.name
+    summary["translations"].append({"kind": "apply.sh", "source": apply_src_record})
 
     if overridden_skills or deleted_skills:
         (output / "skills" / "_override").mkdir(parents=True, exist_ok=True)
@@ -282,7 +340,7 @@ def main() -> int:
         (output / "skills").mkdir(exist_ok=True)
 
     for skill in overridden_skills:
-        src = fork / "skills" / skill
+        src = plugin_root / "skills" / skill
         dst = output / "skills" / "_override" / skill
         shutil.copytree(src, dst)
         summary["translations"].append({
@@ -292,7 +350,7 @@ def main() -> int:
         })
 
     for skill in added_skills:
-        src = fork / "skills" / skill
+        src = plugin_root / "skills" / skill
         dst = output / "skills" / skill
         shutil.copytree(src, dst)
         summary["translations"].append({
@@ -316,7 +374,9 @@ def main() -> int:
             })
 
     for path in additive_files:
-        src = fork / path
+        # `path` is plugin-relative (e.g. "scripts/foo.py"); read from the plugin
+        # subtree, write at the template root.
+        src = plugin_root / path
         dst = output / path
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
@@ -331,8 +391,12 @@ def main() -> int:
             "filename": filename,
         })
 
-    summary_path = output / ".hamster" / "package_summary.json"
-    summary_path.write_text(json.dumps(summary, indent=2) + "\n")
+    # Provenance lives with the fork (the builder's scratch), NOT inside the
+    # shipped template — keeping built templates free of dev-history/paths.
+    hamster_dir = fork / ".hamster"
+    hamster_dir.mkdir(exist_ok=True)
+    summary_path = hamster_dir / "package_summary.json"
+    summary_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
 
     info(f"\nPackaged template: {output}")
     info(f"Base commit: {base_commit[:12]}")

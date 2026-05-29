@@ -20,7 +20,7 @@ The extraction phase for verification projects. Sweep regulation source document
 
 Why: regulations contain rules whether or not your samples violate them. If you start with samples, you only find rules that have visible violations. Comprehensive coverage requires reading the regulations exhaustively.
 
-Per spec §8.5 user reply and the kc_cli DEVLOG entry on E2E #12: in one project, sample-first extraction missed 30% of the rules. Don't repeat.
+In past verification work, sample-first extraction missed a large fraction of the rules (the ones whose violations didn't happen to appear in the samples). Don't repeat that — read the regulations exhaustively, not the samples.
 
 ## Phase shape
 

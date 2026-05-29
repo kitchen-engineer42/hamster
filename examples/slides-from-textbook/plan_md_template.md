@@ -11,7 +11,7 @@
 - Initial input: `.john/input/` (textbook PDF or markdown)
 - Produced skills (after 2skills half): `.claude/skills/` will contain per-slide concept entries + a glossary
 
-## Four structures (per spec §4, pre-filled for slides)
+## Four structures (pre-filled for slides)
 
 - **Format of knowledge**: per-slide concepts. Each concept = one teachable idea that fits one slide.
 - **Schema of knowledge**: `{id, concept, topic, visual_kind, visual_hint, component_type, difficulty, related[]}`. Header (one-line description + classification + cross-refs) and body (full elaboration + citation + visual specification).

@@ -101,7 +101,7 @@ Labeled examples that should pass or fail. Used in Phase 4 (testing) to measure 
 
 - It doesn't extract rules from source. That's [[rule-extraction]].
 - It doesn't test rule accuracy. That's [[rule-testing]] in Phase 4.
-- It doesn't distill rules into cheap-LLM workflows. That's Phase 5 (out of M5 scope; templates may ship their own distill skill).
+- It doesn't distill rules into cheap-LLM workflows. That's Phase 5 (out of scope here; templates may ship their own distill skill).
 
 ## Cross-references
 
