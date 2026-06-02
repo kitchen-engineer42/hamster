@@ -4,7 +4,7 @@
 
 ## What John is
 
-John (slug `joharnessburg`, AGPL-3.0) is a Claude Code plugin that wraps Claude Code in skills + hooks + slash commands + a Python toolkit, so a single long-running session can take unstructured input (books, regulations, mixed docs) through knowledge engineering and then app building. Architecture: **horizontal phases × vertical parallel subagents**.
+John (slug `joharnessburg`, MIT) is a Claude Code plugin that wraps Claude Code in skills + hooks + slash commands + a Python toolkit, so a single long-running session can take unstructured input (books, regulations, mixed docs) through knowledge engineering and then app building. Architecture: **horizontal phases × vertical parallel subagents**.
 
 ## Repository layout (marketplace + plugin subdir)
 
