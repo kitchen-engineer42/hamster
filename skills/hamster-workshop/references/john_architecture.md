@@ -1,6 +1,6 @@
 # John architecture — Hamster's working summary
 
-**Pinned to John v0.1.20 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg Claude Code plugin as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
+**Pinned to John v0.1.21 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg Claude Code plugin as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
 
 ## What John is
 
@@ -19,7 +19,7 @@ joharnessburg/                       # repo root (also the marketplace root)
 │       ├── .claude-plugin/
 │       │   └── plugin.json           # Claude Code plugin manifest
 │       ├── hooks/hooks.json          # Hook declarations
-│       ├── skills/<26 skills>/       # The "fat" in thin-harness-fat-skills
+│       ├── skills/<27 skills>/       # The "fat" in thin-harness-fat-skills
 │       ├── commands/<slash-cmds>/    # Slash commands
 │       ├── scripts/<toolkit>.py      # Small Python utilities
 │       ├── agents/<subagent>.md      # Subagent role definitions
@@ -32,7 +32,7 @@ When you fork via `scaffold_fork.py`, your fork mirrors this layout — you modi
 
 **Outside the plugin (workspace level)**, joharnessburg ships alongside `local_clients/llm/` and `local_clients/ppx/` — external FastAPI servers wrapping SiliconFlow/DeepSeek and the `memect-ppx` parser. Plugin code reaches them via env vars (`$JOHN_LLM_CLIENT_URL`, `$JOHN_PPX_CLIENT_URL`). Templates do NOT ship local_clients — they live with the platform deployment.
 
-## The 26 skills (grouped by role)
+## The 27 skills (grouped by role)
 
 Skills live at `plugins/joharnessburg/skills/<name>/SKILL.md` with optional `references/` subdirs. Templates can override (`skills/_override/<name>/`), add (`skills/<new>/`), or delete (`skills/_delete` file) any of these.
 
@@ -61,9 +61,10 @@ Skills live at `plugins/joharnessburg/skills/<name>/SKILL.md` with optional `ref
 - `subsite-builder` — Produced app's overall structure for platform-integrated projects.
 - `code-quality-guardrails` — Deterministic quality checks on code John produces.
 
-**Runtime + event coordination (2)**
+**Runtime + event coordination (3)**
 - `workerllm-runtime` — How produced apps call workerLLMs at runtime.
 - `event-log-and-reducer` — Append-only event log + deterministic reducer for coordinating parallel subagents.
+- `vertical-workflows` — The vertical-axis execution engine: author a Claude Code dynamic workflow to run a large fan-out phase (fan out workers off-context, adversarially cross-check, write to the event log), with inline-dispatch fallback. Teaches the John-shaped fan-out *pattern*, not the workflow API.
 
 **Platform integration — for produced apps that ship to the team's hosted platform (7)**
 - `platform-auth`, `platform-credits`, `platform-deploy`, `platform-llm-proxy`, `platform-model-config`, `platform-parser`, `platform-telemetry`
@@ -120,7 +121,8 @@ Template layout:
 │   └── _delete                         # newline list of core skills to remove
 ├── scripts/<new-script>.py             # additive only (collision warns + skips)
 ├── commands/<new-command>.md           # additive only
-└── agents/<new-agent>.md               # additive only
+├── agents/<new-agent>.md               # additive only
+└── workflows/<name>.js                 # optional: saved dynamic workflows; /john:init installs them into the project's .claude/workflows/
 ```
 
 The canonical flow:
@@ -139,6 +141,7 @@ There is **no per-workspace "active template" state**. The plugin loaded at sess
 - Add new scripts, commands, agents (additive only).
 - Delete core skills via `skills/_delete`.
 - Ship a starter `plan_md_template.md` and `claude_addon.md`.
+- Ship saved dynamic workflows under `workflows/` (research-preview; installed into the project's `.claude/workflows/` by `/john:init`). Most templates won't — John core ships the `vertical-workflows` skill so Claude authors the fan-out live. Freeze a workflow only when the sweep shape is stable; keep it shape-only and graceful (Claude re-authors if workflows are unavailable).
 
 **What templates CANNOT do** (collision warnings or platform-level concerns):
 - Override scripts, commands, agents (collision in additive-only mode → skip + warn).
@@ -152,12 +155,13 @@ When a template is applied, `apply_template.py` copies `plan_md_template.md` and
 
 - `init_workspace.py` reads `templates-active/plan_md_template.md` (if present) as the PLAN.md skeleton — falls back to a hardcoded template otherwise.
 - `init_workspace.py` reads `templates-active/claude_addon.md` (if present) and appends it under a `## From active template` section in the scaffolded CLAUDE.md.
+- `apply_template.py` also copies a template's `workflows/` to `templates-active/workflows/`; `init_workspace.py` then installs those `*.js` into the project's `.claude/workflows/` (skip-if-exists), where Claude Code registers them as `/<name>` commands. (A plugin can't register saved workflows directly — they have to land in the project, which is why they route through `templates-active/`.)
 
 This is how a template injects project-level guidance into a John runtime session without touching the layer-2 CLAUDE.md or the layer-3 skill body.
 
 ## The ralph_loop — horizontal phase driver
 
-John's runtime is one long Claude Code session that iterates through phases declared in PLAN.md. Each phase has subagents (vertical parallelism) that emit events to an append-only event log; a deterministic reducer collapses events into state. Templates customize the phase list (via `plan_md_template.md`), the schema-design (per project), and the subagent roles (via `agents/` or overrides). The mechanics live in `ralph-loop`, `phase-design`, `event-log-and-reducer`, `subagent-dispatch` skills.
+John's runtime is one long Claude Code session that iterates through phases declared in PLAN.md. Each phase has subagents (vertical parallelism) that emit events to an append-only event log; a deterministic reducer collapses events into state. A large, uniform fan-out phase runs as **one dynamic-workflow run** (the `vertical-workflows` skill) when the session supports it — the workflow fans the workers out off-context, cross-checks them, and writes the same events; the phase boundary is the sign-off seam between runs. When workflows aren't available it falls back to inline dispatch — same events, same reducer, same output. Templates customize the phase list (via `plan_md_template.md`), the schema-design (per project), and the subagent roles (via `agents/` or overrides). The mechanics live in `ralph-loop`, `phase-design`, `event-log-and-reducer`, `subagent-dispatch`, `vertical-workflows` skills.
 
 ## Local clients (workspace level, outside the plugin)
 
@@ -168,7 +172,7 @@ When the tech team ships production servers, the URL env vars get swapped — no
 
 ## Subagent definitions
 
-`plugins/joharnessburg/agents/` contains subagent role definitions used by `subagent-dispatch`. Notable ones include `knowledge-extractor`, `schema-designer`, `code-quality-reviewer`. Templates can ADD agents (additive only); they can't override existing ones via the additive-collision policy.
+`plugins/joharnessburg/agents/` contains subagent role definitions used by `subagent-dispatch` and `vertical-workflows`. The worker agents are `knowledge-extractor` and `schema-designer`; the reviewer/cross-check agents are `code-quality-reviewer`, plus `coverage-auditor` (finds entries the extractor missed — MECE) and `grounding-checker` (flags entries not traceable to source) for the adversarial cross-check stage of a fan-out workflow. Templates can ADD agents (additive only); they can't override existing ones via the additive-collision policy.
 
 ## How a layer-3 John session typically flows
 
@@ -190,7 +194,7 @@ Your template customizes any of these moves the apps in your family need to be d
 
 ## When this rots
 
-This summary is pinned to John v0.1.20. When John updates, this doc will drift. To recover:
+This summary is pinned to John v0.1.21. When John updates, this doc will drift. To recover:
 
 1. Re-read live `$JOHARNESSBURG_PATH/PLAN.md` (the workspace plan in the joharnessburg repo).
 2. Re-read live `$JOHARNESSBURG_PATH/README.md` and `$JOHARNESSBURG_PATH/plugins/joharnessburg/templates/README.md`.

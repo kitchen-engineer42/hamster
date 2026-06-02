@@ -21,6 +21,7 @@ Output structure (per joharnessburg/templates/README.md):
     scripts/<new-file>.py ... (additive only)
     commands/<new-file>.md ... (additive only)
     agents/<new-file>.md ... (additive only)
+    workflows/<new-file>.js ... (saved dynamic workflows, from the fork's .claude/workflows/)
     plan_md_template.md (if present at fork root)
     claude_addon.md (if present at fork root)
 
@@ -115,12 +116,24 @@ def strip_plugin_prefix(path: str, rel_prefix: str) -> str | None:
 def classify_change(path: str, base_skills: set, rel_prefix: str) -> dict:
     """Classify a changed (repo-relative) path. Returns dict with 'kind' + fields.
 
-    kind ∈ {"override_skill", "add_skill", "additive", "template_root", "warn"}
+    kind ∈ {"override_skill", "add_skill", "additive", "template_root", "workflow", "warn"}
     Note: deletion of a whole skill dir is detected later, not here.
     """
     # Template-root files live at the fork root, outside the plugin subtree.
     if path in ("plan_md_template.md", "claude_addon.md"):
         return {"kind": "template_root", "filename": path}
+
+    # Saved dynamic workflows: Claude Code stores them in the project's
+    # .claude/workflows/. In a fork that's <fork>/.claude/workflows/<name>.js —
+    # at the fork root, outside the plugin subtree. They ride in the template's
+    # workflows/ dir; /john:init installs them into the user's .claude/workflows/.
+    wf_prefix = ".claude/workflows/"
+    if path.startswith(wf_prefix):
+        remainder = path[len(wf_prefix):]
+        if remainder and "/" not in remainder:
+            return {"kind": "workflow", "filename": remainder}
+        # Only flat .js files in .claude/workflows/ are supported.
+        return {"kind": "warn", "path": path}
 
     inner = strip_plugin_prefix(path, rel_prefix)
     if inner is None:
@@ -260,6 +273,7 @@ def main() -> int:
     added_skills = {}         # skill_name -> True (new dir)
     additive_files = []       # list of paths
     template_root_files = []  # list of filenames
+    workflow_files = []       # saved-workflow basenames (from .claude/workflows/)
 
     for status, path in changes:
         c = classify_change(path, base_skills, rel_prefix)
@@ -295,6 +309,16 @@ def main() -> int:
                 additive_files.append(c["path"])
         elif kind == "template_root":
             template_root_files.append(c["filename"])
+        elif kind == "workflow":
+            if status == "D":
+                summary["warnings"].append({
+                    "path": path,
+                    "reason": ("Removing a shipped workflow isn't a template "
+                               "operation; just don't ship it. Skipping."),
+                })
+                warn(f"deletion of {path} not template-supported; skipping")
+            else:
+                workflow_files.append(c["filename"])
         elif kind == "warn":
             summary["warnings"].append({
                 "path": path,
@@ -388,6 +412,16 @@ def main() -> int:
         shutil.copy2(src, dst)
         summary["translations"].append({
             "kind": "template_root",
+            "filename": filename,
+        })
+
+    for filename in workflow_files:
+        src = fork / ".claude" / "workflows" / filename
+        dst = output / "workflows" / filename
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+        summary["translations"].append({
+            "kind": "workflow",
             "filename": filename,
         })
 

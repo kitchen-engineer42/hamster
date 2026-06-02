@@ -50,6 +50,7 @@ What it does:
   - Modified files inside an existing `skills/<name>/` → full skill dir copied to `skills/_override/<name>/`.
   - New `skills/<new-name>/` → `skills/<new-name>/` additive.
   - New file under `scripts/`, `commands/`, `agents/` → same path (additive).
+  - New `.js` file in the fork's `.claude/workflows/` (a saved dynamic workflow) → `workflows/<name>.js` (see below).
   - Deleted `skills/<name>/` (whole dir) → `<name>` appended to `skills/_delete`.
   - `plan_md_template.md` or `claude_addon.md` at fork root → template root.
   - Modifications to anything else → WARN, skip, record in summary.
@@ -58,6 +59,14 @@ What it does:
 - Writes `<output>/.hamster/package_summary.json` with base commit, every translation, every warning, timestamp.
 
 Output: `templates/<template-name>/` is a valid John template folder, ready for the user to review and move to `joharnessburg/templates/`.
+
+## Shipping a saved workflow (optional, research preview)
+
+Most templates don't need this — John core ships the `vertical-workflows` skill so layer-3 Claude authors the right fan-out live per project. But if your domain has a **stable** sweep shape (a rule × chapter sweep, a per-slide render), you can freeze it as a saved workflow and ship it.
+
+To author one: while modifying the fork, run the sweep as a dynamic workflow, then save the run's script (Claude Code saves it to the project's `.claude/workflows/<name>.js`). The packager picks up new `.claude/workflows/*.js` files and copies them into the template's `workflows/`; at runtime `/john:init` installs them into the user's project `.claude/workflows/`, where they register as `/<name>` commands.
+
+Keep it shape-only — encode the fan-out *structure*, not one corpus's specifics (same discipline as `plan_md_template.md`). And treat it as graceful: it requires the user's Claude Code to support workflows, and Claude can always re-author live if it's absent.
 
 ## What to do with warnings
 
@@ -90,6 +99,7 @@ After `package_template.py` succeeds, look at `templates/<name>/`:
 - `skills/_override/<name>/` — each override should be a complete skill dir (SKILL.md + any references/).
 - `skills/<new-name>/` — same; complete skill dirs.
 - `skills/_delete` — list of names, one per line.
+- `workflows/<name>.js` — any saved dynamic workflows the template ships (optional).
 - `plan_md_template.md`, `claude_addon.md` — what layer-3 Claude reads at runtime.
 
 If anything looks wrong, return to the fork, fix, delete `templates/<name>/`, re-package.
