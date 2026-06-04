@@ -99,7 +99,7 @@ Templates can ADD scripts but cannot override existing ones (additive-only; the 
 - `/john:init` — scaffold a workspace in cwd.
 - `/john:status` — print current phase + progress.
 - `/john:archive` — archive a finished workspace.
-- `/endurance` — set or recall the session's endurance goal.
+- `/john:endurance` — set or recall the session's endurance goal.
 
 Templates are installed + applied via `apply.sh` and launched via `--plugin-dir`; see "Templates" below.
 
