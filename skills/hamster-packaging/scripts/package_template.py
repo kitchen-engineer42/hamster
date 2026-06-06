@@ -46,6 +46,20 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+# John's load-bearing core skills (annotated copy — the authoritative set
+# lives in joharnessburg's scripts/apply_template.py as CORE_SKILLS; keep in
+# sync). Deleting one of these from a template is allowed but must carry a
+# same-line `# reason` in skills/_delete, or apply_template.py nags loudly.
+JOHN_CORE_SKILLS = {
+    "using-john",
+    "ralph-loop",
+    "event-log-and-reducer",
+    "workspace-discipline",
+    "context-management",
+    "subagent-dispatch",
+}
+
+
 def err(msg: str) -> None:
     print(f"ERROR: {msg}", file=sys.stderr)
 
@@ -385,9 +399,17 @@ def main() -> int:
 
     if deleted_skills:
         delete_file = output / "skills" / "_delete"
-        delete_file.write_text("\n".join(sorted(deleted_skills)) + "\n")
+        lines = []
+        for skill in sorted(deleted_skills):
+            if skill in JOHN_CORE_SKILLS:
+                # John's apply_template.py wants core deletions to carry a
+                # same-line `# reason`; stamp a TODO the author must replace.
+                lines.append(f"{skill} # TODO: state why this core skill is deleted")
+            else:
+                lines.append(skill)
+        delete_file.write_text("\n".join(lines) + "\n")
         for skill in deleted_skills:
-            summary["translations"].append({
+            entry = {
                 "kind": "delete_skill",
                 "skill": skill,
                 "reminder": ("Deletion via _delete is supported. If you're "
@@ -395,7 +417,18 @@ def main() -> int:
                              "name, make sure references from other skills, "
                              "claude_addon.md, and plan_md_template.md point "
                              "at the new name."),
-            })
+            }
+            if skill in JOHN_CORE_SKILLS:
+                entry["core_skill_warning"] = (
+                    f"'{skill}' is one of John's load-bearing core skills. "
+                    "apply_template.py will warn loudly on deletion; replace the "
+                    "TODO comment in skills/_delete with the actual reason before "
+                    "shipping this template."
+                )
+                print(f"WARNING: template deletes John core skill '{skill}' — "
+                      f"state why in skills/_delete (a '# reason' comment was "
+                      f"stamped as TODO).", file=sys.stderr)
+            summary["translations"].append(entry)
 
     for path in additive_files:
         # `path` is plugin-relative (e.g. "scripts/foo.py"); read from the plugin
