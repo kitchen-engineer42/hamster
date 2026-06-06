@@ -6,13 +6,13 @@ metadata:
     - package the rules
     - emit rule skills
     - ship the rules
-    - finalize 2skills
+    - finalize knowledge phases
     - per-rule skill emission
 ---
 
 # packaging (doc-verification override)
 
-For doc-verification, each rule becomes one Claude Code skill at `<project>/.claude/skills/rule-R<id>/`. Drawn from KC_CLI's proven shape. Overrides John core's generic packaging.
+For doc-verification, each rule becomes one Claude Code skill at `<project>/.claude/skills/rule-R<id>/`. Drawn from KC's proven shape. Overrides John core's generic packaging.
 
 ## Per-rule directory structure
 

@@ -12,7 +12,7 @@ metadata:
 
 # slide-rendering (slides-from-textbook template)
 
-The 2app side of a slides project. The 2skills half produced per-slide concept entries at `<project>/.claude/skills/`. This skill maps each entry to a slide component, renders an HTML fragment, and assembles them into a single self-contained .html file.
+The app-phase side of a slides project. The knowledge phases produced per-slide concept entries at `<project>/.claude/skills/`. This skill maps each entry to a slide component, renders an HTML fragment, and assembles them into a single self-contained .html file.
 
 ## The component types
 
@@ -97,6 +97,6 @@ The assembler is implemented inline (in the render phase, layer-2 Claude does it
 
 - [[chunking]] — produces the chunks the extract phase reads
 - [[knowledge-extraction]] — produces the entries this skill renders
-- [[app-design-thinking]] — the 2app shape; slide deck = static-output app (Shape 1)
+- [[app-design-thinking]] — the app-phase shape; slide deck = static-output app (Shape 1)
 - [[code-quality-guardrails]] — quality checks on the produced .html (no broken refs, no external CDN, smoke test passes)
 - [[packaging]] — runs in parallel with rendering for the meta-knowledge (concept entries) that the produced deck consumes

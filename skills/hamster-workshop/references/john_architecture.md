@@ -1,10 +1,10 @@
 # John architecture — Hamster's working summary
 
-**Pinned to John v0.1.21 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg Claude Code plugin as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
+**Pinned to John v0.2.0 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg Claude Code plugin as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
 
 ## What John is
 
-John (slug `joharnessburg`, MIT) is a Claude Code plugin that wraps Claude Code in skills + hooks + slash commands + a Python toolkit, so a single long-running session can take unstructured input (books, regulations, mixed docs) through knowledge engineering and then app building. Architecture: **horizontal phases × vertical parallel subagents**.
+John (plugin `john`, distributed via the `joharnessburg` marketplace; MIT, open-source) is a Claude Code plugin that wraps Claude Code in skills + hooks + slash commands + a Python toolkit, so a single long-running session can take unstructured input (books, regulations, mixed docs) through the **knowledge phases** (knowledge engineering) and then the **app phases** (app building). Architecture: **horizontal phases × vertical parallel subagents**. The repo-root `CONTEXT.md` is the canonical glossary (knowledge-dense app, entry vs mechanism knowledge, the app-type definition); design decisions are recorded in `docs/adr/`. Produced apps **run standalone by default** — platform integration is template territory.
 
 ## Repository layout (marketplace + plugin subdir)
 
@@ -19,11 +19,13 @@ joharnessburg/                       # repo root (also the marketplace root)
 │       ├── .claude-plugin/
 │       │   └── plugin.json           # Claude Code plugin manifest
 │       ├── hooks/hooks.json          # Hook declarations
-│       ├── skills/<27 skills>/       # The "fat" in thin-harness-fat-skills
+│       ├── skills/<19 skills>/       # The "fat" in thin-harness-fat-skills
 │       ├── commands/<slash-cmds>/    # Slash commands
 │       ├── scripts/<toolkit>.py      # Small Python utilities
 │       ├── agents/<subagent>.md      # Subagent role definitions
 │       └── templates/                # Bundled example templates + authoring docs
+├── CONTEXT.md                       # Canonical glossary
+├── docs/adr/                        # Short decision records
 ├── README.md, README_ZH.md
 └── LICENSE
 ```
@@ -32,9 +34,9 @@ When you fork via `scaffold_fork.py`, your fork mirrors this layout — you modi
 
 **Outside the plugin (workspace level)**, joharnessburg ships alongside `local_clients/llm/` and `local_clients/ppx/` — external FastAPI servers wrapping SiliconFlow/DeepSeek and the `memect-ppx` parser. Plugin code reaches them via env vars (`$JOHN_LLM_CLIENT_URL`, `$JOHN_PPX_CLIENT_URL`). Templates do NOT ship local_clients — they live with the platform deployment.
 
-## The 27 skills (grouped by role)
+## The 19 skills (grouped by role)
 
-Skills live at `plugins/joharnessburg/skills/<name>/SKILL.md` with optional `references/` subdirs. Templates can override (`skills/_override/<name>/`), add (`skills/<new>/`), or delete (`skills/_delete` file) any of these.
+Skills live at `plugins/joharnessburg/skills/<name>/SKILL.md` with optional `references/` subdirs. Templates can override (`skills/_override/<name>/`), add (`skills/<new>/`), or delete (`skills/_delete` file) any of these. **Deleting one of the six load-bearing core skills** (using-john, ralph-loop, event-log-and-reducer, workspace-discipline, context-management, subagent-dispatch) is allowed but must carry a same-line `# reason` in `_delete`, or `apply_template.py` warns extra-loudly (warn-only, never blocks); `package_template.py` stamps a TODO reason for you to replace.
 
 **Orientation + working discipline (5)**
 - `using-john` — Top-level orientation. Layer-3 Claude reads this first.
@@ -49,27 +51,23 @@ Skills live at `plugins/joharnessburg/skills/<name>/SKILL.md` with optional `ref
 - `phase-design` — Decide what phases this project actually needs.
 
 **Knowledge engineering pipeline (6)**
-- `parsing` — Turn raw inputs (PDFs, DOCX, mixed docs) into structured markdown.
+- `parsing` — Probe-first capability ladder (Claude-native → markitdown in-process → ppx when reachable); escalates when results aren't *good enough for the job* (tables/charts), not only on failure.
 - `chunking` — Break parsed markdown into a tree of progressively-disclosed chunks.
 - `schema-design` — Decide what shape the knowledge takes for this project.
 - `knowledge-extraction` — Sweep chunks for entries matching the project's schema; emit via event log.
 - `knowledge-rewrite` — Clean, cross-link, dedupe raw event-log entries.
 - `packaging` — Emit cleaned knowledge as Claude Code skills (the produced app's "fat").
 
-**App building (3)**
-- `app-design-thinking` — Runtime structure + production pipeline for the produced app. The 2app analog of schema-design.
-- `subsite-builder` — Produced app's overall structure for platform-integrated projects.
+**App building (2)**
+- `app-design-thinking` — App mechanism + build pipeline for the produced app. The app-phase analog of schema-design. Standalone-by-default deployment posture.
 - `code-quality-guardrails` — Deterministic quality checks on code John produces.
 
 **Runtime + event coordination (3)**
-- `workerllm-runtime` — How produced apps call workerLLMs at runtime.
+- `workerllm-runtime` — How produced apps call workerLLMs at runtime (vendor-neutral: any OpenAI-compatible endpoint at `$JOHN_LLM_CLIENT_URL`).
 - `event-log-and-reducer` — Append-only event log + deterministic reducer for coordinating parallel subagents.
 - `vertical-workflows` — The vertical-axis execution engine: author a Claude Code dynamic workflow to run a large fan-out phase (fan out workers off-context, adversarially cross-check, write to the event log), with inline-dispatch fallback. Teaches the John-shaped fan-out *pattern*, not the workflow API.
 
-**Platform integration — for produced apps that ship to the team's hosted platform (7)**
-- `platform-auth`, `platform-credits`, `platform-deploy`, `platform-llm-proxy`, `platform-model-config`, `platform-parser`, `platform-telemetry`
-
-Most templates won't touch the platform-* skills; they're conditional, loaded only when the produced apps need them.
+**(Removed in v0.2.0)** The 7 `platform-*` skills + `subsite-builder` left vanilla core with the open-source pivot — they encode a private platform's contracts and now live in a private template outside this repo. If your template targets that platform, it composes with the private template; vanilla templates assume standalone apps.
 
 ## Hooks
 
@@ -80,9 +78,9 @@ Most templates won't touch the platform-* skills; they're conditional, loaded on
 `plugins/joharnessburg/scripts/` ships small stdlib-Python utilities. Notable ones Hamster Claude may need to know about:
 
 - `init_workspace.py` — scaffolds a fresh John workspace (CLAUDE.md, PLAN.md, .john/). Reads `templates-active/plan_md_template.md` + `claude_addon.md` if present.
-- `apply_template.py` — applies a template diff to John's installed plugin; produces a merged plugin at `~/.claude/plugins/joharnessburg-applied/<name>/`. Called by each template's `apply.sh`.
+- `apply_template.py` — applies a template diff to John's installed plugin; produces a merged plugin at `~/.claude/plugins/joharnessburg-applied/<name>/`. Called by each template's `apply.sh`. v0.2.0: checks `template.json`'s `requires_john` against the installed version (warn-only) and guards core-skill deletions (loud warning + computed referrers + `# reason` convention).
 - `reset_john.py` — wipes all merged plugins at `~/.claude/plugins/joharnessburg-applied/`. Use to clean state between template tests.
-- `reduce_events.py` — deterministic reducer for the event log; supports `--dry-run`.
+- `reduce_events.py` — deterministic reducer for the event log; supports `--dry-run`. v0.2.0 adds the **phase-boundary checks**: `--expect-entries N|MIN-MAX` (count gate; far short → exit **3** = do not advance the phase) and `--verify-knowledge` (report-only disk↔event-log reconciliation). Template plan skeletons should give fan-out phases an expected entry count so the gate has a number.
 - `ppx_parse.py` — thin HTTP client to the local `local_clients/ppx/` FastAPI server.
 - `markitdown_parse.py` — wrapper around the `markitdown` library for non-PDF parsing.
 - `parse_govcn_html.py` — gov.cn HTML fallback parser.
@@ -111,14 +109,14 @@ Template layout:
 
 ```
 <template>/
-├── template.json                       # required: name, version, description, requires_john (informational)
+├── template.json                       # required: name, version, description, requires_john (checked warn-only at apply time since v0.2.0)
 ├── apply.sh                            # required: symlink/copy of joharnessburg/plugins/joharnessburg/templates/apply.sh
 ├── plan_md_template.md                 # optional: starter PLAN.md skeleton
 ├── claude_addon.md                     # optional: appended to scaffolded CLAUDE.md
 ├── skills/
 │   ├── <new-skill>/                    # additive: new skill not in core
 │   ├── _override/<core-skill>/         # replaces a core skill (FULL replacement, not merge)
-│   └── _delete                         # newline list of core skills to remove
+│   └── _delete                         # newline list of core skills to remove; `name # reason` same-line comments supported (required-in-spirit for the six load-bearing core skills)
 ├── scripts/<new-script>.py             # additive only (collision warns + skips)
 ├── commands/<new-command>.md           # additive only
 ├── agents/<new-agent>.md               # additive only
@@ -157,7 +155,7 @@ When a template is applied, `apply_template.py` copies `plan_md_template.md` and
 - `init_workspace.py` reads `templates-active/claude_addon.md` (if present) and appends it under a `## From active template` section in the scaffolded CLAUDE.md.
 - `apply_template.py` also copies a template's `workflows/` to `templates-active/workflows/`; `init_workspace.py` then installs those `*.js` into the project's `.claude/workflows/` (skip-if-exists), where Claude Code registers them as `/<name>` commands. (A plugin can't register saved workflows directly — they have to land in the project, which is why they route through `templates-active/`.)
 
-This is how a template injects project-level guidance into a John runtime session without touching the layer-2 CLAUDE.md or the layer-3 skill body.
+This is how a template injects project-level guidance into a John runtime session without touching John's core CLAUDE.md scaffolding logic or the core skill bodies.
 
 ## The ralph_loop — horizontal phase driver
 
@@ -185,8 +183,8 @@ When the tech team ships production servers, the URL env vars get swapped — no
 5. `using-john` skill triggers; layer-3 Claude reads it + PLAN.md + CLAUDE.md.
 6. `init_workspace.py` (or its `/john:init` command) scaffolds `.john/`, PLAN.md, CLAUDE.md from `templates-active/`.
 7. Layer-3 Claude works through the phases declared in PLAN.md, using ralph_loop to advance, dispatching subagents for parallel work per phase, writing events to the log, reading reduced state.
-8. Each phase typically: read inputs (parsing skill), chunk (chunking), extract knowledge (knowledge-extraction with subagents), rewrite/dedupe (knowledge-rewrite), package as skills (packaging), eventually build the app (app-design-thinking, subsite-builder).
-9. Final output: a working app shipped to the team's platform (via platform-* skills) or run locally.
+8. Each phase typically: read inputs (parsing skill), chunk (chunking), schema pilot + extract (schema-design, knowledge-extraction with subagents, gated reduce at the boundary), rewrite/dedupe (knowledge-rewrite), package as skills (packaging), eventually build the app (app-design-thinking).
+9. Final output: a working app that **runs standalone** (locally or on any host, `.env`-configured). Platform-integrated deployment arrives only via a platform template.
 
 Your template customizes any of these moves the apps in your family need to be done differently.
 
@@ -194,7 +192,7 @@ Your template customizes any of these moves the apps in your family need to be d
 
 ## When this rots
 
-This summary is pinned to John v0.1.21. When John updates, this doc will drift. To recover:
+This summary is pinned to John v0.2.0. When John updates, this doc will drift. To recover:
 
 1. Re-read live `$JOHARNESSBURG_PATH/PLAN.md` (the workspace plan in the joharnessburg repo).
 2. Re-read live `$JOHARNESSBURG_PATH/README.md` and `$JOHARNESSBURG_PATH/plugins/joharnessburg/templates/README.md`.

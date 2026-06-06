@@ -28,14 +28,14 @@ When you spot a tipping point, surface it to the user before locking. "I'm about
 
 ## The "good toC product" instincts to keep in mind
 
-These produce a *useful* app, not just a *correct* one. They land in the template's runtime structure (the third of the four structures) and in the building pipeline (how layer-3 Claude reasons during the build).
+These produce a *useful* app, not just a *correct* one. They land in the template's app mechanism (the third of the four app-type decisions) and in the build pipeline (how layer-3 Claude reasons during the build).
 
 - **First minute matters.** A user lands on a produced app — what do they see? Can they get a result in their first interaction? Templates should encourage produced apps to have a working golden path before any polish.
-- **Reversibility is comfort.** Produced apps should let users undo, re-try, change their mind without losing context. When the runtime structure includes a "results page", it should include "back to inputs" — not a dead end.
+- **Reversibility is comfort.** Produced apps should let users undo, re-try, change their mind without losing context. When the app mechanism includes a "results page", it should include "back to inputs" — not a dead end.
 - **Legibility over cleverness.** A user understanding *why* the app made a decision matters more than the decision being technically optimal. Templates whose apps surface chain-of-reasoning to the end user usually beat templates whose apps only surface verdicts.
 - **Speed is a feature.** A produced app that runs in 10 seconds beats a produced app that runs in 90 seconds at slightly lower quality, for most use cases. Bias templates toward faster-cheaper workerLLMs first, escalation second.
 
-These don't need to live as separate skills inside the template — they're decisions you make while designing the template's runtime structure. But naming them helps you check your own work.
+These don't need to live as separate skills inside the template — they're decisions you make while designing the template's app mechanism. But naming them helps you check your own work.
 
 ## The toB platform instincts
 

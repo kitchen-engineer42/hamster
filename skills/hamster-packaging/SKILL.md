@@ -51,7 +51,7 @@ What it does:
   - New `skills/<new-name>/` → `skills/<new-name>/` additive.
   - New file under `scripts/`, `commands/`, `agents/` → same path (additive).
   - New `.js` file in the fork's `.claude/workflows/` (a saved dynamic workflow) → `workflows/<name>.js` (see below).
-  - Deleted `skills/<name>/` (whole dir) → `<name>` appended to `skills/_delete`.
+  - Deleted `skills/<name>/` (whole dir) → `<name>` appended to `skills/_delete`. If the name is one of John's six load-bearing core skills (using-john, ralph-loop, event-log-and-reducer, workspace-discipline, context-management, subagent-dispatch), the packager stamps `# TODO: state why this core skill is deleted` on the line and warns — **replace the TODO with the actual reason before shipping**; John's apply step warns loudly on core deletions and extra-loudly when no reason is stated.
   - `plan_md_template.md` or `claude_addon.md` at fork root → template root.
   - Modifications to anything else → WARN, skip, record in summary.
 - Auto-generates `template.json` (name from output dir, version `0.1.0`, requires_john from current joharnessburg version).
@@ -98,7 +98,7 @@ After `package_template.py` succeeds, look at `templates/<name>/`:
 - `apply.sh` — should be a symlink (or copy on Windows).
 - `skills/_override/<name>/` — each override should be a complete skill dir (SKILL.md + any references/).
 - `skills/<new-name>/` — same; complete skill dirs.
-- `skills/_delete` — list of names, one per line.
+- `skills/_delete` — list of names, one per line; same-line `name # reason` comments supported (a reason is expected for core-skill deletions).
 - `workflows/<name>.js` — any saved dynamic workflows the template ships (optional).
 - `plan_md_template.md`, `claude_addon.md` — what layer-3 Claude reads at runtime.
 

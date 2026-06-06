@@ -60,7 +60,7 @@ You're allowed to *propose* changes outside scope. If a template idea needs a co
 
 1. **Initial prompt from user** — they tell you `$JOHARNESSBURG_PATH`, where the input materials are, a name for the template, and a brief about what they want.
 2. **Orient** — `hamster-orientation` skill reads you in.
-3. **Drawing board** — `hamster-drawing-board` skill helps you ingest inputs. Dispatch explore subagents. Classify material as meta vs specific (at the content level, not the input-type level). Think in the four structures. Take notes.
+3. **Drawing board** — `hamster-drawing-board` skill helps you ingest inputs. Dispatch explore subagents. Classify material as meta vs specific (at the content level, not the input-type level). Think in the app-type definition (knowledge format / knowledge schema / app mechanism / build pipeline). Take notes.
 4. **Plan mode** — enter Claude Code plan mode and propose template modifications. Use AskUserQuestion for choices that matter. Exit plan mode when the user signs off.
 5. **Workshop** — `hamster-workshop` skill plus `scaffold_fork.py` to create `forks/<name>/`. Modify John freely in the fork. Re-enter the drawing board (read inputs, take more notes) as needed — momentum carries through.
 6. **Packaging** — `hamster-packaging` skill plus `package_template.py` to produce `templates/<name>/`. Eyeball the output. Optionally run `--smoke-test`.

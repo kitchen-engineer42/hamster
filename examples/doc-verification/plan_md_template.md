@@ -1,6 +1,6 @@
 # PLAN.md — {project_name}
 
-*Created by `/john:init` on {date}, using the **doc-verification** template (KC_CLI-equivalent). Edit freely; this is your living plan.*
+*Created by `/john:init` on {date}, using the **doc-verification** template (KC-equivalent). Edit freely; this is your living plan.*
 
 ## Project intent
 
@@ -10,15 +10,15 @@
 
 - Initial input: `.john/input/` (regulation documents — laws, policies, internal rules)
 - Sample documents: `.john/samples/` (labeled documents for testing extracted rules)
-- Produced skills (after 2skills half): `.claude/skills/rule-R*/` — one skill per rule
+- Produced skills (after the knowledge phases): `.claude/skills/rule-R*/` — one skill per rule
 - Glossary: `.claude/skills/glossary/` — shared vocabulary
 
-## Four structures (pre-filled for verification)
+## App-type definition (pre-filled for verification)
 
-- **Format of knowledge**: rules + glossary. Rules are the primary unit; glossary is shared vocabulary referenced by rules.
-- **Schema of knowledge**: per the rule schema in this template's `schema-design` override — see [[schema-design]] (the active version is the doc-verification override, automatically merged for this project). Headers + bodies per the universal progressive-disclosure pattern.
-- **Runtime structure**: doc-upload UI → parse + classify each document → apply all rules in scope → produce violations report + confidence per finding → dashboard for the auditor to review.
-- **Production pipeline**: 7 phases below, mirroring KC's verified shape.
+- **Knowledge format**: rules + glossary. Rules are the primary unit; glossary is shared vocabulary referenced by rules.
+- **Knowledge schema**: per the rule schema in this template's `schema-design` override — see [[schema-design]] (the active version is the doc-verification override, automatically merged for this project). Headers + bodies per the universal progressive-disclosure pattern.
+- **App mechanism**: doc-upload UI → parse + classify each document → apply all rules in scope → produce violations report + confidence per finding → dashboard for the auditor to review.
+- **Build pipeline**: 7 phases below, mirroring KC's verified shape.
 
 ## Phases
 

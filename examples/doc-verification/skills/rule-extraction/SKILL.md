@@ -1,6 +1,6 @@
 ---
 name: rule-extraction
-description: Extract atomic, falsifiable, testable rules from regulation documents — the 2skills extraction phase for doc-verification projects. Use this skill whenever the extract phase fires in a doc-verification project. Source-first principle (sweep regulations BEFORE looking at samples) is mandatory; without it, rules silently get dropped.
+description: Extract atomic, falsifiable, testable rules from regulation documents — the knowledge-phase extraction step for doc-verification projects. Use this skill whenever the extract phase fires in a doc-verification project. Source-first principle (sweep regulations BEFORE looking at samples) is mandatory; without it, rules silently get dropped.
 metadata:
   triggers:
     - extract rules
@@ -14,7 +14,7 @@ metadata:
 
 The extraction phase for verification projects. Sweep regulation source documents and produce atomic, falsifiable, testable rules in the schema defined by this template's `schema-design` override.
 
-## The source-first principle (kc_cli's hard-won lesson)
+## The source-first principle (KC's hard-won lesson)
 
 **Extract from the source regulations FIRST. Only after a complete first-pass catalog is built do you open sample documents for validation.** Reverse the order and you silently drop rules the samples don't exercise.
 

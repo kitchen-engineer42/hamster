@@ -14,7 +14,7 @@ metadata:
 
 For doc-verification projects, the schema is locked. John core's `schema-design` is open-ended; this template narrows it. **Do not engage the user in a schema-design conversation for this project type** — the schema is already specified below. If the user wants to deviate, they should either pick a different template or fork this one.
 
-## Format of knowledge
+## Knowledge format
 
 **Rules + glossary.** Every entry is either a rule or a glossary term. No facts, no stories, no wiki entries.
 

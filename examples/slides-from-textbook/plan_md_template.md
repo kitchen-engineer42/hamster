@@ -9,14 +9,14 @@
 ## Knowledge inventory
 
 - Initial input: `.john/input/` (textbook PDF or markdown)
-- Produced skills (after 2skills half): `.claude/skills/` will contain per-slide concept entries + a glossary
+- Produced skills (after the knowledge phases): `.claude/skills/` will contain per-slide concept entries + a glossary
 
-## Four structures (pre-filled for slides)
+## App-type definition (pre-filled for slides)
 
-- **Format of knowledge**: per-slide concepts. Each concept = one teachable idea that fits one slide.
-- **Schema of knowledge**: `{id, concept, topic, visual_kind, visual_hint, component_type, difficulty, related[]}`. Header (one-line description + classification + cross-refs) and body (full elaboration + citation + visual specification).
-- **Runtime structure**: single-page HTML slide deck. Arrow-key navigation. 13 component types: cover-slide, section-divider, content-two-col, timeline, bar-chart, chain-process, comparison, fill-blank, mcq, mini-game, canvas-sim, web-source, media-embed, summary. In-browser edit mode for teacher post-edit.
-- **Production pipeline**: 6 phases below.
+- **Knowledge format**: per-slide concepts. Each concept = one teachable idea that fits one slide.
+- **Knowledge schema**: `{id, concept, topic, visual_kind, visual_hint, component_type, difficulty, related[]}`. Header (one-line description + classification + cross-refs) and body (full elaboration + citation + visual specification).
+- **App mechanism**: single-page HTML slide deck. Arrow-key navigation. 13 component types: cover-slide, section-divider, content-two-col, timeline, bar-chart, chain-process, comparison, fill-blank, mcq, mini-game, canvas-sim, web-source, media-embed, summary. In-browser edit mode for teacher post-edit.
+- **Build pipeline**: 6 phases below.
 
 ## Phases
 
@@ -55,7 +55,7 @@
 - Required artifacts: `.john/events/extract/<chunk-id>/*.json`; `.john/checkpoints/extract/state.json`
 - Done criteria: every chunk has at least one entry_extracted event; reducer's canonical state has the expected entry count
 
-### Phase 6: render + assemble (the 2app deliverable)
+### Phase 6: render + assemble (the app-phase deliverable)
 
 - Intent: map each entry to a slide component; render HTML per slide; assemble single .html file with inlined media.
 - Skills to invoke: `slide-rendering` (template-provided), `packaging`

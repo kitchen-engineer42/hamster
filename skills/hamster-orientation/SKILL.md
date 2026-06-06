@@ -45,7 +45,7 @@ The fork is your modified John. The template is the diff packaged for someone el
 ## The five Hamster skills — when each wants to run
 
 - **`hamster-orientation`** (this one) — session start, "where am I" moments, "what can you do" queries from the user.
-- **`hamster-drawing-board`** — when ingesting raw inputs, classifying material as meta-vs-specific, thinking in the four structures (format of knowledge / schema of knowledge / runtime structure / building pipeline).
+- **`hamster-drawing-board`** — when ingesting raw inputs, classifying material as meta-vs-specific, thinking in the app-type definition (knowledge format / knowledge schema / app mechanism / build pipeline).
 - **`hamster-product-thinking`** — when reasoning about the apps the template will produce: who's the user, what's the experience, is the template generalizing without overfitting.
 - **`hamster-workshop`** — when modifying John in the fork: what can a template override vs add vs delete, when to embed `ppx`/`llm_client`, when to flag a tool gap to the user.
 - **`hamster-packaging`** — when scaffolding the fork (`scaffold_fork.py`) or producing the template (`package_template.py`), or when reviewing the package summary.
