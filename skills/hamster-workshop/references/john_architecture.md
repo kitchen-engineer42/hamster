@@ -1,6 +1,6 @@
 # John architecture — Hamster's working summary
 
-**Pinned to John v0.2.2 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg Claude Code plugin as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
+**Pinned to John v0.2.3 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg Claude Code plugin as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
 
 ## What John is
 
@@ -71,7 +71,7 @@ Skills live at `plugins/joharnessburg/skills/<name>/SKILL.md` with optional `ref
 
 ## Hooks
 
-`hooks/hooks.json` declares hooks that auto-fire during Claude Code sessions. The primary hook is `PostToolUse` with matcher `Read|Bash|Write|Edit` — used for event-log discipline and workspace tracking. There's also a `SessionStart` hook that injects PLAN.md preview + endurance goal + loaded-template info into the session's initial context. **Templates do NOT modify hooks.json** — that's core platform infrastructure.
+`hooks/hooks.json` declares hooks that auto-fire during Claude Code sessions. The primary hook is `PostToolUse` with matcher `Read|Bash|Write|Edit` — used for event-log discipline and workspace tracking. There's also a `SessionStart` hook that injects PLAN.md preview + endurance goal + loaded-template info into the session's initial context. Since v0.2.3 the hooks (and the workspace CLI scripts) resolve the project as the nearest `.john/` **at or above** the session cwd — running from a project subdirectory is fine. **Templates do NOT modify hooks.json** — that's core platform infrastructure.
 
 ## Scripts (Python toolkit)
 
@@ -172,6 +172,18 @@ When the tech team ships production servers, the URL env vars get swapped — no
 
 `plugins/joharnessburg/agents/` contains subagent role definitions used by `subagent-dispatch` and `vertical-workflows`. The worker agents are `knowledge-extractor` and `schema-designer`; the reviewer/cross-check agents are `code-quality-reviewer`, plus `coverage-auditor` (finds entries the extractor missed — MECE) and `grounding-checker` (flags entries not traceable to source) for the adversarial cross-check stage of a fan-out workflow. Templates can ADD agents (additive only); they can't override existing ones via the additive-collision policy.
 
+## Agent event contract (v0.2.2+) — REQUIRED for any fan-out agent your template adds
+
+Worker agents your template ships must emit events the core reducer understands; agents that drift from this contract generate `incomplete_chunks` warning noise on every reduce, sort wrongly, can overwrite each other's events on re-dispatch, and are invisible to the count gate. Every fan-out agent's events must:
+
+1. **Start with a `chunk_echo` event and end with a `chunk_complete` event** (per work unit) — the reducer's completeness check expects BOTH once either appears in a phase.
+2. **Carry `timestamp` (ISO-8601 UTC) and `subagent_id` at the top level** of every event — the reducer's deterministic order sorts by timestamp.
+3. **Use subagent-id-prefixed filenames** (`<subagent-id>-<suffix>.json`) — keeps the log append-only when a unit is re-dispatched to a second worker.
+4. **Write atomically** — temp name first, then rename to the final `.json` (a reduce can race a mid-write file).
+5. **Include `entry_id` (or `entry_ids`)** in events that claim produced units — that's what `reduce_events.py --expect-entries` counts; events without it can't be gated.
+
+Don't re-derive the shapes: copy them from John core's `agents/knowledge-extractor.md` — it is the canonical, reducer-aligned example — and adapt the domain fields.
+
 ## How a layer-3 John session typically flows
 
 (For your mental model — you, Hamster Claude, are designing the template that *shapes* this flow.)
@@ -192,7 +204,7 @@ Your template customizes any of these moves the apps in your family need to be d
 
 ## When this rots
 
-This summary is pinned to John v0.2.2. When John updates, this doc will drift. To recover:
+This summary is pinned to John v0.2.3. When John updates, this doc will drift. To recover:
 
 1. Re-read live `$JOHARNESSBURG_PATH/PLAN.md` (the workspace plan in the joharnessburg repo).
 2. Re-read live `$JOHARNESSBURG_PATH/README.md` and `$JOHARNESSBURG_PATH/plugins/joharnessburg/templates/README.md`.
