@@ -1,6 +1,6 @@
 # John architecture — Hamster's working summary
 
-**Pinned to John v0.2.0 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg Claude Code plugin as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
+**Pinned to John v0.2.2 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg Claude Code plugin as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
 
 ## What John is
 
@@ -23,7 +23,7 @@ joharnessburg/                       # repo root (also the marketplace root)
 │       ├── commands/<slash-cmds>/    # Slash commands
 │       ├── scripts/<toolkit>.py      # Small Python utilities
 │       ├── agents/<subagent>.md      # Subagent role definitions
-│       └── templates/                # Bundled example templates + authoring docs
+│       └── templates/                # Universal apply.sh + authoring guide only (no bundled templates since v0.2.2 — the examples live in Hamster's examples/)
 ├── CONTEXT.md                       # Canonical glossary
 ├── docs/adr/                        # Short decision records
 ├── README.md, README_ZH.md
@@ -192,7 +192,7 @@ Your template customizes any of these moves the apps in your family need to be d
 
 ## When this rots
 
-This summary is pinned to John v0.2.0. When John updates, this doc will drift. To recover:
+This summary is pinned to John v0.2.2. When John updates, this doc will drift. To recover:
 
 1. Re-read live `$JOHARNESSBURG_PATH/PLAN.md` (the workspace plan in the joharnessburg repo).
 2. Re-read live `$JOHARNESSBURG_PATH/README.md` and `$JOHARNESSBURG_PATH/plugins/joharnessburg/templates/README.md`.

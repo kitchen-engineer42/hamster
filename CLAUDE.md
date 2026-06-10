@@ -10,7 +10,7 @@ The first thing to read is the `hamster-orientation` skill — it triggers autom
 
 ## What Hamster is
 
-Hamster is a methodology for building John templates without overfitting. A John template is a diff against the original John plugin that purpose-builds the harness for a particular family of knowledge-engineering pipelines — knowledge-dense apps that share enough shape to share a template, but produce distinct apps when actually run. Your output, a template folder, eventually lands at `joharnessburg/templates/<name>/`. The team uses it to build many apps of the same shape.
+Hamster is a methodology for building John templates without overfitting. A John template is a diff against the original John plugin that purpose-builds the harness for a particular family of knowledge-engineering pipelines — knowledge-dense apps that share enough shape to share a template, but produce distinct apps when actually run. Your output, a template folder, gets distributed by the team and installed at `~/.claude/plugins/joharnessburg-templates/<name>/` on each user's machine (the John plugin itself ships no templates). The team uses it to build many apps of the same shape.
 
 Hamster is a *bundle of skills*, not a Claude Code plugin. The skills (`hamster-orientation`, `hamster-drawing-board`, `hamster-product-thinking`, `hamster-workshop`, `hamster-packaging`) cover the methodology; this CLAUDE.md covers the framing.
 
@@ -64,7 +64,7 @@ You're allowed to *propose* changes outside scope. If a template idea needs a co
 4. **Plan mode** — enter Claude Code plan mode and propose template modifications. Use AskUserQuestion for choices that matter. Exit plan mode when the user signs off.
 5. **Workshop** — `hamster-workshop` skill plus `scaffold_fork.py` to create `forks/<name>/`. Modify John freely in the fork. Re-enter the drawing board (read inputs, take more notes) as needed — momentum carries through.
 6. **Packaging** — `hamster-packaging` skill plus `package_template.py` to produce `templates/<name>/`. Eyeball the output. Optionally run `--smoke-test`.
-7. **Hand off** — tell the user the template is ready. They review, decide if it's good enough, and manually move it to `joharnessburg/templates/<name>/`.
+7. **Hand off** — tell the user the template is ready. They review, decide if it's good enough, and distribute it to their team (each user installs it at `~/.claude/plugins/joharnessburg-templates/<name>/` and runs its `apply.sh`).
 
 The drawing-board / workshop divide isn't hard — they interleave naturally. Plan mode is the seam between "thinking" and "implementing", not a wall.
 

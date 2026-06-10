@@ -58,7 +58,7 @@ What it does:
 - Symlinks `apply.sh` from the canonical location (or copies on platforms without symlink support).
 - Writes `<output>/.hamster/package_summary.json` with base commit, every translation, every warning, timestamp.
 
-Output: `templates/<template-name>/` is a valid John template folder, ready for the user to review and move to `joharnessburg/templates/`.
+Output: `templates/<template-name>/` is a valid John template folder, ready for the user to review and distribute (each user installs it at `~/.claude/plugins/joharnessburg-templates/<name>/` and runs its `apply.sh` — the John plugin itself ships no templates).
 
 ## Shipping a saved workflow (optional, research preview)
 
@@ -134,4 +134,4 @@ If you're still designing what to change (not done modifying), the trigger is `h
 
 Tell the user: "Template packaged at `templates/<template-name>/`. Base commit: `<short-hash>`. Translations: N. Warnings: 0 (or N with details in the summary). Ready for your review."
 
-The user will eyeball, possibly test against a real joharnessburg-applied dir, and manually move to `joharnessburg/templates/<name>/` when satisfied.
+The user will eyeball, possibly test against a real joharnessburg-applied dir, and distribute it when satisfied (team users install it at `~/.claude/plugins/joharnessburg-templates/<name>/`).

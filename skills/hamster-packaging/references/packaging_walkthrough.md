@@ -119,9 +119,9 @@ The fork is the workspace; the template is regenerable from it.
 
 Tell the user the template is ready. Suggest:
 
-> Template packaged at `templates/my-template/`. Base commit: `<short-hash>`. Translations: N. Warnings: 0. Ready for your review — when you're satisfied, move it to `joharnessburg/templates/my-template/`.
+> Template packaged at `templates/my-template/`. Base commit: `<short-hash>`. Translations: N. Warnings: 0. Ready for your review — when you're satisfied, distribute it; each user installs it at `~/.claude/plugins/joharnessburg-templates/my-template/` and runs its `apply.sh`.
 
-The user eyeballs, possibly tests against a real joharnessburg-applied dir, then manually moves.
+The user eyeballs, possibly tests against a real joharnessburg-applied dir, then distributes.
 
 ## 10. (Later) When you need to refresh the template
 

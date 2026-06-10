@@ -50,7 +50,7 @@ Example:
 
 > joharnessburg is at `~/joharnessburg`. Inputs are at `~/template-inputs/some-folder/`. Template name: `slides-from-physics-textbooks`. We want apps that take a physics chapter and produce a slide deck.
 
-Hamster orients itself, dispatches explore subagents over your inputs, enters plan mode to propose template modifications, then forks John into `forks/<name>/`, modifies the fork, and packages the diff into `templates/<name>/`. You move that folder into `joharnessburg/templates/<name>/` when you're satisfied.
+Hamster orients itself, dispatches explore subagents over your inputs, enters plan mode to propose template modifications, then forks John into `forks/<name>/`, modifies the fork, and packages the diff into `templates/<name>/`. When you're satisfied, distribute that folder however your team shares templates (its own git repo, a tarball); each user installs it at `~/.claude/plugins/joharnessburg-templates/<name>/` and runs its `apply.sh`. (The John plugin itself ships no templates — the merged-plugin flow is documented in joharnessburg's `templates/README.md`.)
 
 ## What ships in this repo
 
