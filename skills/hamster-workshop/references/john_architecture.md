@@ -1,6 +1,6 @@
 # John architecture — Hamster's working summary
 
-**Pinned to John v0.2.3 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg Claude Code plugin as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
+**Pinned to John v0.2.4 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg Claude Code plugin as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
 
 ## What John is
 
@@ -19,7 +19,7 @@ joharnessburg/                       # repo root (also the marketplace root)
 │       ├── .claude-plugin/
 │       │   └── plugin.json           # Claude Code plugin manifest
 │       ├── hooks/hooks.json          # Hook declarations
-│       ├── skills/<19 skills>/       # The "fat" in thin-harness-fat-skills
+│       ├── skills/<20 skills>/       # The "fat" in thin-harness-fat-skills
 │       ├── commands/<slash-cmds>/    # Slash commands
 │       ├── scripts/<toolkit>.py      # Small Python utilities
 │       ├── agents/<subagent>.md      # Subagent role definitions
@@ -34,7 +34,7 @@ When you fork via `scaffold_fork.py`, your fork mirrors this layout — you modi
 
 **Outside the plugin (workspace level)**, joharnessburg ships alongside `local_clients/llm/` and `local_clients/ppx/` — external FastAPI servers wrapping SiliconFlow/DeepSeek and the `memect-ppx` parser. Plugin code reaches them via env vars (`$JOHN_LLM_CLIENT_URL`, `$JOHN_PPX_CLIENT_URL`). Templates do NOT ship local_clients — they live with the platform deployment.
 
-## The 19 skills (grouped by role)
+## The 20 skills (grouped by role)
 
 Skills live at `plugins/joharnessburg/skills/<name>/SKILL.md` with optional `references/` subdirs. Templates can override (`skills/_override/<name>/`), add (`skills/<new>/`), or delete (`skills/_delete` file) any of these. **Deleting one of the six load-bearing core skills** (using-john, ralph-loop, event-log-and-reducer, workspace-discipline, context-management, subagent-dispatch) is allowed but must carry a same-line `# reason` in `_delete`, or `apply_template.py` warns extra-loudly (warn-only, never blocks); `package_template.py` stamps a TODO reason for you to replace.
 
@@ -62,8 +62,9 @@ Skills live at `plugins/joharnessburg/skills/<name>/SKILL.md` with optional `ref
 - `app-design-thinking` — App mechanism + build pipeline for the produced app. The app-phase analog of schema-design. Standalone-by-default deployment posture.
 - `code-quality-guardrails` — Deterministic quality checks on code John produces.
 
-**Runtime + event coordination (3)**
+**Runtime + event coordination (4)**
 - `workerllm-runtime` — How produced apps call workerLLMs at runtime (vendor-neutral: any OpenAI-compatible endpoint at `$JOHN_LLM_CLIENT_URL`).
+- `job-runtime` — (v0.2.4+) The long-running I/O job runtime for produced apps whose end-users wait on expensive generation: persistent task registry, bounded worker pool with leases, separate queue/generation timeout budgets, SSE/polling progress resumable by task ID, between-stage cancellation, requeue. Deliberately distinct from build-time `vertical-workflows`. Templates for I/O app families can scaffold from its reference contracts.
 - `event-log-and-reducer` — Append-only event log + deterministic reducer for coordinating parallel subagents.
 - `vertical-workflows` — The vertical-axis execution engine: author a Claude Code dynamic workflow to run a large fan-out phase (fan out workers off-context, adversarially cross-check, write to the event log), with inline-dispatch fallback. Teaches the John-shaped fan-out *pattern*, not the workflow API.
 
@@ -204,7 +205,7 @@ Your template customizes any of these moves the apps in your family need to be d
 
 ## When this rots
 
-This summary is pinned to John v0.2.3. When John updates, this doc will drift. To recover:
+This summary is pinned to John v0.2.4. When John updates, this doc will drift. To recover:
 
 1. Re-read live `$JOHARNESSBURG_PATH/PLAN.md` (the workspace plan in the joharnessburg repo).
 2. Re-read live `$JOHARNESSBURG_PATH/README.md` and `$JOHARNESSBURG_PATH/plugins/joharnessburg/templates/README.md`.
