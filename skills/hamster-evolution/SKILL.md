@@ -11,7 +11,7 @@ A template is the unit of domain learning: a bundle of skills used to build many
 
 1. **The current template** — the real installed source, at its exact version. Note `requires_john` and which John versions the evidence ran on.
 2. **Run reports** — the postmortems users assembled with `/john:report` (manifest, scorecard highlights, outcome summary, candidate lessons, deviations). These are your primary dataset. They arrive scrubbed; treat any corpus content that slipped through as radioactive — quote none of it forward.
-3. **Shared lessons ledgers / audits** (optional) — richer per-run detail when a user shares it.
+3. **Shared lessons ledgers / audits** (optional) — richer per-run detail when a user shares it. **Ask for the full audit** when a report references one, or when the recurring problems are craft/result-quality rather than process: a 1-page report carries process evidence well and result *forensics* poorly, so on reports alone you can justify process and conformance changes but rarely craft redesigns — don't force the latter from thin evidence; request the source.
 4. **The template's own evolution record** — prior changelogs, if this isn't v2. What was tried, what the evidence said, what got rejected.
 
 Two kinds of evidence, weighted differently:
