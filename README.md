@@ -66,7 +66,8 @@ hamster/
 │   ├── hamster-drawing-board/
 │   ├── hamster-product-thinking/
 │   ├── hamster-workshop/
-│   └── hamster-packaging/
+│   ├── hamster-packaging/
+│   └── hamster-evolution/        # v0.2.0+: evolve an existing template from its run reports
 └── examples/                     # reference John templates (functional demonstrators of the diff format)
     ├── slides-from-textbook/     # lighter — 1 override + 1 addition
     └── doc-verification/         # heavier, KC-style — 2 overrides + 2 additions

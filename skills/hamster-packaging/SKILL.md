@@ -51,14 +51,29 @@ What it does:
   - New `skills/<new-name>/` → `skills/<new-name>/` additive.
   - New file under `scripts/`, `commands/`, `agents/` → same path (additive).
   - New `.js` file in the fork's `.claude/workflows/` (a saved dynamic workflow) → `workflows/<name>.js` (see below).
-  - Deleted `skills/<name>/` (whole dir) → `<name>` appended to `skills/_delete`. If the name is one of John's six load-bearing core skills (using-john, ralph-loop, event-log-and-reducer, workspace-discipline, context-management, subagent-dispatch), the packager stamps `# TODO: state why this core skill is deleted` on the line and warns — **replace the TODO with the actual reason before shipping**; John's apply step warns loudly on core deletions and extra-loudly when no reason is stated.
+  - Deleted `skills/<name>/` (whole dir) → `<name>` appended to `skills/_delete`. If the name is one of John's seven load-bearing core skills (using-john, ralph-loop, event-log-and-reducer, workspace-discipline, context-management, subagent-dispatch, skill-evolution), the packager stamps `# TODO: state why this core skill is deleted` on the line and warns — **replace the TODO with the actual reason before shipping**; John's apply step warns loudly on core deletions and extra-loudly when no reason is stated.
   - `plan_md_template.md` or `claude_addon.md` at fork root → template root.
+  - `evolution.json` at fork root → folded into the generated `template.json` as the `evolution` block (the template's scorer/eval set + feedback design — see "Declaring evolution" below).
   - Modifications to anything else → WARN, skip, record in summary.
 - Auto-generates `template.json` (name from output dir, version `0.1.0`, requires_john from current joharnessburg version).
 - Symlinks `apply.sh` from the canonical location (or copies on platforms without symlink support).
 - Writes `<output>/.hamster/package_summary.json` with base commit, every translation, every warning, timestamp.
 
 Output: `templates/<template-name>/` is a valid John template folder, ready for the user to review and distribute (each user installs it at `~/.claude/plugins/joharnessburg-templates/<name>/` and runs its `apply.sh` — the John plugin itself ships no templates).
+
+## Declaring evolution (recommended for any template the team will iterate)
+
+A template that wants **Ring-1 evolution** (John v0.3.x: the template improves from accumulated run reports) ships its feedback design: put an `evolution.json` at the fork root —
+
+```json
+{
+  "scorer": "scripts/score_outputs.py — exact-match against the eval set",
+  "eval_set": "eval/held_out_cases.json (12 labeled cases, disjoint from examples)",
+  "feedback_design": "build-session eval on the held-out slice; end-user corrections at app runtime are the slow gold"
+}
+```
+
+The packager folds it into `template.json` as the `evolution` block and warns if `scorer` or `feedback_design` is missing. No `evolution.json` = a gentle note, not an error — the template still works, but its worker skills can't be trained during builds and evolution runs on process evidence + lessons only. Design guidance (collection points, ground truth, judges that verify vs re-do): John core's `skill-evolution` skill, `references/feedback-design.md`.
 
 ## Shipping a saved workflow (optional, research preview)
 
@@ -94,7 +109,7 @@ If anything's off, fix it (re-edit the fork, re-package) before handing off.
 
 After `package_template.py` succeeds, look at `templates/<name>/`:
 
-- `template.json` — confirm name, description, requires_john are right.
+- `template.json` — confirm name, description, requires_john are right; if the team will iterate this template, confirm the `evolution` block landed (scorer + feedback design).
 - `apply.sh` — should be a symlink (or copy on Windows).
 - `skills/_override/<name>/` — each override should be a complete skill dir (SKILL.md + any references/).
 - `skills/<new-name>/` — same; complete skill dirs.

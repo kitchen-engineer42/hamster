@@ -57,6 +57,7 @@ JOHN_CORE_SKILLS = {
     "workspace-discipline",
     "context-management",
     "subagent-dispatch",
+    "skill-evolution",
 }
 
 
@@ -130,12 +131,22 @@ def strip_plugin_prefix(path: str, rel_prefix: str) -> str | None:
 def classify_change(path: str, base_skills: set, rel_prefix: str) -> dict:
     """Classify a changed (repo-relative) path. Returns dict with 'kind' + fields.
 
-    kind ∈ {"override_skill", "add_skill", "additive", "template_root", "workflow", "warn"}
+    kind ∈ {"override_skill", "add_skill", "additive", "template_root", "evolution_declaration", "internal", "workflow", "warn"}
     Note: deletion of a whole skill dir is detected later, not here.
     """
     # Template-root files live at the fork root, outside the plugin subtree.
     if path in ("plan_md_template.md", "claude_addon.md"):
         return {"kind": "template_root", "filename": path}
+
+    # The evolution declaration is folded into the generated template.json
+    # later in main(); the diff itself needs no translation.
+    if path == "evolution.json":
+        return {"kind": "evolution_declaration", "filename": path}
+
+    # The packager's own provenance dir inside the fork — never template
+    # content; repeated packaging runs would otherwise warn about it forever.
+    if path.startswith(".hamster/"):
+        return {"kind": "internal", "filename": path}
 
     # Saved dynamic workflows: Claude Code stores them in the project's
     # .claude/workflows/. In a fork that's <fork>/.claude/workflows/<name>.js —
@@ -323,6 +334,8 @@ def main() -> int:
                 additive_files.append(c["path"])
         elif kind == "template_root":
             template_root_files.append(c["filename"])
+        elif kind in ("evolution_declaration", "internal"):
+            pass  # evolution.json folds into template.json below; .hamster/ is packager provenance
         elif kind == "workflow":
             if status == "D":
                 summary["warnings"].append({
@@ -353,6 +366,36 @@ def main() -> int:
         "description": description,
         "requires_john": summary["requires_john"],
     }
+
+    # Evolution declaration (John v0.3.x): a template that wants Ring-1
+    # evolution ships its feedback design. Authors declare it in a fork-root
+    # evolution.json; it folds into template.json as the `evolution` block.
+    # Warn-only — a template without one still works, but its worker skills
+    # can't be trained and evolution runs on process evidence + lessons only.
+    evolution_src = fork / "evolution.json"
+    if evolution_src.is_file():
+        try:
+            evolution = json.loads(evolution_src.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            evolution = None
+            warn(f"evolution.json present but unreadable ({exc}); skipping")
+        if isinstance(evolution, dict):
+            missing = [k for k in ("scorer", "feedback_design") if not evolution.get(k)]
+            if missing:
+                warn(
+                    "evolution.json is missing: " + ", ".join(missing)
+                    + " — a template declaring evolution should name its scorer/eval set "
+                    + "and its feedback design (see John's skill-evolution skill)"
+                )
+            template_json["evolution"] = evolution
+            summary["translations"].append({"kind": "evolution.json", "auto": False})
+    else:
+        info(
+            "note: no evolution.json at the fork root — template ships no scorer; "
+            "its worker skills can't be trained and Ring-1 evolution will run on "
+            "process evidence + lessons only (fine for a first version)"
+        )
+
     (output / "template.json").write_text(
         json.dumps(template_json, indent=2) + "\n"
     )

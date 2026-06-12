@@ -12,7 +12,9 @@ The first thing to read is the `hamster-orientation` skill — it triggers autom
 
 Hamster is a methodology for building John templates without overfitting. A John template is a diff against the original John plugin that purpose-builds the harness for a particular family of knowledge-engineering pipelines — knowledge-dense apps that share enough shape to share a template, but produce distinct apps when actually run. Your output, a template folder, gets distributed by the team and installed at `~/.claude/plugins/joharnessburg-templates/<name>/` on each user's machine (the John plugin itself ships no templates). The team uses it to build many apps of the same shape.
 
-Hamster is a *bundle of skills*, not a Claude Code plugin. The skills (`hamster-orientation`, `hamster-drawing-board`, `hamster-product-thinking`, `hamster-workshop`, `hamster-packaging`) cover the methodology; this CLAUDE.md covers the framing.
+Hamster is a *bundle of skills*, not a Claude Code plugin. The skills (`hamster-orientation`, `hamster-drawing-board`, `hamster-product-thinking`, `hamster-workshop`, `hamster-packaging`, `hamster-evolution`) cover the methodology; this CLAUDE.md covers the framing.
+
+Two session shapes share these skills: **building** a new template (drawing board → workshop → packaging, the flow below) and **evolving** an existing one from its installed base's run reports (`hamster-evolution` — same fork+package machinery, but the inputs are evidence, the output is the template's next version as a bounded, evidence-named diff, and the gate is the template owner).
 
 ## Three layers — name which one when discussing
 

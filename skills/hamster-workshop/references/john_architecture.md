@@ -1,6 +1,6 @@
 # John architecture — Hamster's working summary
 
-**Pinned to John v0.2.4 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg Claude Code plugin as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
+**Pinned to John v0.3.2 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg Claude Code plugin as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
 
 ## What John is
 
@@ -19,7 +19,7 @@ joharnessburg/                       # repo root (also the marketplace root)
 │       ├── .claude-plugin/
 │       │   └── plugin.json           # Claude Code plugin manifest
 │       ├── hooks/hooks.json          # Hook declarations
-│       ├── skills/<20 skills>/       # The "fat" in thin-harness-fat-skills
+│       ├── skills/<21 skills>/       # The "fat" in thin-harness-fat-skills
 │       ├── commands/<slash-cmds>/    # Slash commands
 │       ├── scripts/<toolkit>.py      # Small Python utilities
 │       ├── agents/<subagent>.md      # Subagent role definitions
@@ -34,16 +34,17 @@ When you fork via `scaffold_fork.py`, your fork mirrors this layout — you modi
 
 **Outside the plugin (workspace level)**, joharnessburg ships alongside `local_clients/llm/` and `local_clients/ppx/` — external FastAPI servers wrapping SiliconFlow/DeepSeek and the `memect-ppx` parser. Plugin code reaches them via env vars (`$JOHN_LLM_CLIENT_URL`, `$JOHN_PPX_CLIENT_URL`). Templates do NOT ship local_clients — they live with the platform deployment.
 
-## The 20 skills (grouped by role)
+## The 21 skills (grouped by role)
 
-Skills live at `plugins/joharnessburg/skills/<name>/SKILL.md` with optional `references/` subdirs. Templates can override (`skills/_override/<name>/`), add (`skills/<new>/`), or delete (`skills/_delete` file) any of these. **Deleting one of the six load-bearing core skills** (using-john, ralph-loop, event-log-and-reducer, workspace-discipline, context-management, subagent-dispatch) is allowed but must carry a same-line `# reason` in `_delete`, or `apply_template.py` warns extra-loudly (warn-only, never blocks); `package_template.py` stamps a TODO reason for you to replace.
+Skills live at `plugins/joharnessburg/skills/<name>/SKILL.md` with optional `references/` subdirs. Templates can override (`skills/_override/<name>/`), add (`skills/<new>/`), or delete (`skills/_delete` file) any of these. **Deleting one of the seven load-bearing core skills** (using-john, ralph-loop, event-log-and-reducer, workspace-discipline, context-management, subagent-dispatch, skill-evolution) is allowed but must carry a same-line `# reason` in `_delete`, or `apply_template.py` warns extra-loudly (warn-only, never blocks); `package_template.py` stamps a TODO reason for you to replace.
 
-**Orientation + working discipline (5)**
+**Orientation + working discipline (6)**
 - `using-john` — Top-level orientation. Layer-3 Claude reads this first.
 - `ralph-loop` — The iterative plan-driven advancement pattern; horizontal phase driver.
 - `workspace-discipline` — "Disk is truth. Never trust in-memory belief about what's done."
 - `context-management` — Surviving long-running sessions where work spans hours/days.
 - `subagent-dispatch` — When and how to spawn subagents for the vertical axis.
+- `skill-evolution` — (v0.3.x) How a run learns: the lessons ledger at phase boundaries, project-local override drafts (sign-off gated), the worker-skill training loop where a scorer exists, and the evolution-ring boundary (what a session may edit vs what only evolves upstream).
 
 **Planning (3)**
 - `plan-md-authoring` — Write the initial PLAN.md at project start.
@@ -72,16 +73,18 @@ Skills live at `plugins/joharnessburg/skills/<name>/SKILL.md` with optional `ref
 
 ## Hooks
 
-`hooks/hooks.json` declares hooks that auto-fire during Claude Code sessions. The primary hook is `PostToolUse` with matcher `Read|Bash|Write|Edit` — used for event-log discipline and workspace tracking. There's also a `SessionStart` hook that injects PLAN.md preview + endurance goal + loaded-template info into the session's initial context. Since v0.2.3 the hooks (and the workspace CLI scripts) resolve the project as the nearest `.john/` **at or above** the session cwd — running from a project subdirectory is fine. **Templates do NOT modify hooks.json** — that's core platform infrastructure.
+`hooks/hooks.json` declares hooks that auto-fire during Claude Code sessions. The primary hook is `PostToolUse` with matcher `Read|Bash|Write|Edit` — used for event-log discipline and workspace tracking; a second `PostToolUse` entry (matcher `Skill`, v0.3.0+) records every skill invocation to `.john/skill-log/` (args length only, never content) for the process scorecard. There's also a `SessionStart` hook that injects PLAN.md preview + endurance goal + loaded-template info into the session's initial context. Since v0.2.3 the hooks (and the workspace CLI scripts) resolve the project as the nearest `.john/` **at or above** the session cwd — running from a project subdirectory is fine. **Templates do NOT modify hooks.json** — that's core platform infrastructure.
 
 ## Scripts (Python toolkit)
 
 `plugins/joharnessburg/scripts/` ships small stdlib-Python utilities. Notable ones Hamster Claude may need to know about:
 
-- `init_workspace.py` — scaffolds a fresh John workspace (CLAUDE.md, PLAN.md, .john/). Reads `templates-active/plan_md_template.md` + `claude_addon.md` if present.
+- `init_workspace.py` — scaffolds a fresh John workspace (CLAUDE.md, PLAN.md, .john/ — incl. `lessons/` since v0.3.0; stamps the creating John version into workspace.json). Reads `templates-active/plan_md_template.md` + `claude_addon.md` if present.
 - `apply_template.py` — applies a template diff to John's installed plugin; produces a merged plugin at `~/.claude/plugins/joharnessburg-applied/<name>/`. Called by each template's `apply.sh`. v0.2.0: checks `template.json`'s `requires_john` against the installed version (warn-only) and guards core-skill deletions (loud warning + computed referrers + `# reason` convention).
 - `reset_john.py` — wipes all merged plugins at `~/.claude/plugins/joharnessburg-applied/`. Use to clean state between template tests.
-- `reduce_events.py` — deterministic reducer for the event log; supports `--dry-run`. v0.2.0 adds the **phase-boundary checks**: `--expect-entries N|MIN-MAX` (count gate; far short → exit **3** = do not advance the phase) and `--verify-knowledge` (report-only disk↔event-log reconciliation). Template plan skeletons should give fan-out phases an expected entry count so the gate has a number.
+- `reduce_events.py` — deterministic reducer for the event log; supports `--dry-run`. v0.2.0 adds the **phase-boundary checks**: `--expect-entries N|MIN-MAX` (count gate; far short → exit **3** = do not advance the phase) and `--verify-knowledge` (report-only disk↔event-log reconciliation); since v0.3.0 every gated reduce also persists its verdict to `.john/checkpoints/<phase>/gates/`. Template plan skeletons should give fan-out phases an expected entry count so the gate has a number.
+- `process_scorecard.py` — (v0.3.0+) deterministic, read-only, frozen-rubric report of how a run behaved: per-phase events/fan-out/gate verdicts, skill invocations, lessons, silent skips. The rubric is amendable by John's maintainers only — templates and sessions may reference it, never redefine what it counts.
+- `skill_invocation_hook.py` — (v0.3.0+) the Skill-matcher PostToolUse hook behind `.john/skill-log/`.
 - `ppx_parse.py` — thin HTTP client to the local `local_clients/ppx/` FastAPI server.
 - `markitdown_parse.py` — wrapper around the `markitdown` library for non-PDF parsing.
 - `parse_govcn_html.py` — gov.cn HTML fallback parser.
@@ -99,6 +102,7 @@ Templates can ADD scripts but cannot override existing ones (additive-only; the 
 - `/john:status` — print current phase + progress.
 - `/john:archive` — archive a finished workspace.
 - `/john:endurance` — set or recall the session's endurance goal.
+- `/john:report` — (v0.3.2+) assemble the run report (scorecard + outcome + scrubbed candidate lessons) at `.john/reports/` — the evidence a template owner aggregates when evolving the template; sharing is always manual.
 
 Templates are installed + applied via `apply.sh` and launched via `--plugin-dir`; see "Templates" below.
 
@@ -185,6 +189,15 @@ Worker agents your template ships must emit events the core reducer understands;
 
 Don't re-derive the shapes: copy them from John core's `agents/knowledge-extractor.md` — it is the canonical, reducer-aligned example — and adapt the domain fields.
 
+## Skill evolution (v0.3.x) — what it means for template authors
+
+John structures self-improvement as **evolution rings**: Ring 0 = the project (lessons ledger, sign-off-gated local override drafts, and a held-out-gated training loop for workerLLM skills where a scorer exists); **Ring 1 = your template** — the unit of domain learning; Ring 2 = John core (human-driven only). The trainable surface is exactly *what you changed*: the fold of "how to think" into domain "what to do" (your overrides, additive skills, plan skeleton, agents, worker prompts). Two consequences for authoring:
+
+1. **A template that wants to evolve ships its feedback design**: a scorer / eval set + a one-line declaration of where feedback comes from (build-session eval, app-runtime instrumentation, end-user corrections). Declare it via a fork-root `evolution.json` (the packager folds it into `template.json` as an `evolution` block and warns when it's incomplete). No scorer declared = the template still works, but its worker skills can't be trained and Ring-1 evolution runs on process evidence + lessons only.
+2. **Run reports are your template's return channel.** Users assemble them with `/john:report` (scrubbed of corpus content) and share them manually; the `hamster-evolution` skill consumes accumulated reports and emits the template's next version as a bounded, evidence-named diff.
+
+The evaluation surface (the scorecard rubric, the reducer's gates, the event contract) is frozen core — templates build *on* it, never redefine it.
+
 ## How a layer-3 John session typically flows
 
 (For your mental model — you, Hamster Claude, are designing the template that *shapes* this flow.)
@@ -205,7 +218,7 @@ Your template customizes any of these moves the apps in your family need to be d
 
 ## When this rots
 
-This summary is pinned to John v0.2.4. When John updates, this doc will drift. To recover:
+This summary is pinned to John v0.3.2. When John updates, this doc will drift. To recover:
 
 1. Re-read live `$JOHARNESSBURG_PATH/PLAN.md` (the workspace plan in the joharnessburg repo).
 2. Re-read live `$JOHARNESSBURG_PATH/README.md` and `$JOHARNESSBURG_PATH/plugins/joharnessburg/templates/README.md`.
