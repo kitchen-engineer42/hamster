@@ -1,6 +1,6 @@
 # John architecture — Hamster's working summary
 
-**Pinned to John v0.3.2 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg Claude Code plugin as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
+**Pinned to John v0.4.0 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg plugin (now a Claude Code **and** Codex harness) as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
 
 ## What John is
 
@@ -19,7 +19,7 @@ joharnessburg/                       # repo root (also the marketplace root)
 │       ├── .claude-plugin/
 │       │   └── plugin.json           # Claude Code plugin manifest
 │       ├── hooks/hooks.json          # Hook declarations
-│       ├── skills/<21 skills>/       # The "fat" in thin-harness-fat-skills
+│       ├── skills/<21 + 4 skills>/   # 21 methodology skills + 4 Codex command-mirror skills
 │       ├── commands/<slash-cmds>/    # Slash commands
 │       ├── scripts/<toolkit>.py      # Small Python utilities
 │       ├── agents/<subagent>.md      # Subagent role definitions
@@ -33,6 +33,10 @@ joharnessburg/                       # repo root (also the marketplace root)
 When you fork via `scaffold_fork.py`, your fork mirrors this layout — you modify files inside `<fork>/plugins/joharnessburg/`, not at the fork root.
 
 **Outside the plugin (workspace level)**, joharnessburg ships alongside `local_clients/llm/` and `local_clients/ppx/` — external FastAPI servers wrapping SiliconFlow/DeepSeek and the `memect-ppx` parser. Plugin code reaches them via env vars (`$JOHN_LLM_CLIENT_URL`, `$JOHN_PPX_CLIENT_URL`). Templates do NOT ship local_clients — they live with the platform deployment.
+
+## Provider support — Claude Code and Codex (v0.4.0+)
+
+John ships for **both** Claude Code and Codex from one plugin. The Codex surface is additive and lives alongside the Claude Code one: `plugins/joharnessburg/.codex-plugin/plugin.json` (Codex manifest), top-level `.codex/` (Codex `config.toml`, `hooks.json`, and 5 custom agents as `.toml`), top-level `.agents/` (Codex local marketplace + 4 `source-command-*` bridge skills), and 4 **command-mirror skills** in `skills/` (`init-workspace`, `archive-workspace`, `endurance-goal`, `workspace-status`) that expose the `/john:*` slash commands as callable Codex skills. The **skills and Python scripts are shared** between providers; produced skills publish to `.claude/skills/` (Claude Code) and `.agents/skills/` (Codex). Note: the `.codex/agents/*.toml` are hand-mirrors of `agents/*.md` — re-sync them when the `.md` change. For template authoring, work against the Claude Code surface as before; Codex parity for template-applied content is not yet automated.
 
 ## The 21 skills (grouped by role)
 
@@ -85,6 +89,7 @@ Skills live at `plugins/joharnessburg/skills/<name>/SKILL.md` with optional `ref
 - `reduce_events.py` — deterministic reducer for the event log; supports `--dry-run`. v0.2.0 adds the **phase-boundary checks**: `--expect-entries N|MIN-MAX` (count gate; far short → exit **3** = do not advance the phase) and `--verify-knowledge` (report-only disk↔event-log reconciliation); since v0.3.0 every gated reduce also persists its verdict to `.john/checkpoints/<phase>/gates/`. Template plan skeletons should give fan-out phases an expected entry count so the gate has a number.
 - `process_scorecard.py` — (v0.3.0+) deterministic, read-only, frozen-rubric report of how a run behaved: per-phase events/fan-out/gate verdicts, skill invocations, lessons, silent skips. The rubric is amendable by John's maintainers only — templates and sessions may reference it, never redefine what it counts.
 - `skill_invocation_hook.py` — (v0.3.0+) the Skill-matcher PostToolUse hook behind `.john/skill-log/`.
+- `app_first_contracts.py` — (v0.4.0+) standalone opt-in tool: normalize intent, build app-blueprint/extraction-plan contracts, and `scan-ui-leaks` (the **internal-leak guard** wired into `code-quality-guardrails` — flags internal identifiers/raw JSON/paths leaking into a produced app's public UI). Nothing auto-invokes it; the display-first lens in `app-design-thinking` references it.
 - `ppx_parse.py` — thin HTTP client to the local `local_clients/ppx/` FastAPI server.
 - `markitdown_parse.py` — wrapper around the `markitdown` library for non-PDF parsing.
 - `parse_govcn_html.py` — gov.cn HTML fallback parser.
@@ -218,7 +223,7 @@ Your template customizes any of these moves the apps in your family need to be d
 
 ## When this rots
 
-This summary is pinned to John v0.3.2. When John updates, this doc will drift. To recover:
+This summary is pinned to John v0.4.0. When John updates, this doc will drift. To recover:
 
 1. Re-read live `$JOHARNESSBURG_PATH/PLAN.md` (the workspace plan in the joharnessburg repo).
 2. Re-read live `$JOHARNESSBURG_PATH/README.md` and `$JOHARNESSBURG_PATH/plugins/joharnessburg/templates/README.md`.
