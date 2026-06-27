@@ -41,6 +41,7 @@ Optional flags:
 
 - `--apply-script <path>` — explicit path to `joharnessburg/templates/apply.sh` (default: `<fork>/templates/apply.sh`).
 - `--smoke-test` — after packaging, runs `apply.sh --help` to confirm it's executable.
+- `--allow-missing-phase-checkpoint --phase-checkpoint-override-reason "<why>"` — explicit escape hatch for a template that declares phases but intentionally does not ship a checkpoint helper. Use rarely; the default is fail-closed.
 
 What it does:
 
@@ -57,6 +58,8 @@ What it does:
   - Modifications to anything else → WARN, skip, record in summary.
 - Auto-generates `template.json` (name from output dir, version `0.1.0`, requires_john from current joharnessburg version).
 - Symlinks `apply.sh` from the canonical location (or copies on platforms without symlink support).
+- Runs the **phase checkpoint gate**: if `plan_md_template.md` declares phases, the fork must include `scripts/phase_checkpoint.py`, and the plan must reference both `phase_checkpoint.py` and `.john/checkpoints/`. This is fail-closed because skill prose alone cannot guarantee phase monitoring.
+- Stamps a passing package with `.hamster/gate_report.json`.
 - Writes `<output>/.hamster/package_summary.json` with base commit, every translation, every warning, timestamp.
 
 Output: `templates/<template-name>/` is a valid John template folder, ready for the user to review and distribute (each user installs it at `~/.claude/plugins/joharnessburg-templates/<name>/` and runs its `apply.sh` — the John plugin itself ships no templates).
@@ -74,6 +77,25 @@ A template that wants **Ring-1 evolution** (John v0.3.x: the template improves f
 ```
 
 The packager folds it into `template.json` as the `evolution` block and warns if `scorer` or `feedback_design` is missing. No `evolution.json` = a gentle note, not an error — the template still works, but its worker skills can't be trained during builds and evolution runs on process evidence + lessons only. Design guidance (collection points, ground truth, judges that verify vs re-do): John core's `skill-evolution` skill, `references/feedback-design.md`.
+
+## Phase checkpoint gate
+
+Any template that declares a phase pipeline is responsible for making artifact-producing phases visible to John. The standard pattern is to ship an additive script:
+
+```text
+scripts/phase_checkpoint.py
+```
+
+The script writes `.john/checkpoints/<phase>/state.json` with the phase name, status, timestamp, and artifact list. Call it from `plan_md_template.md` done criteria for phases that do not already write reducer checkpoints:
+
+```sh
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/phase_checkpoint.py" app-build \
+  --artifact app \
+  --artifact .john/ui_fidelity_check.md \
+  --note "artifact-producing build phase; no extract-style per-chunk events"
+```
+
+`package_template.py` fails if a phase-bearing template lacks this helper or the plan does not reference it. This is the interim deterministic enforcement point until Hamster becomes a plugin with lifecycle hooks.
 
 ## Shipping a saved workflow (optional, research preview)
 
