@@ -47,6 +47,7 @@ Work like a workshop session, on the same machinery:
 ## The gate (before hand-off)
 
 - **Held-out check.** Re-run what can be re-run: apply vNext cleanly against the pinned John; scaffold a plan from it; run any template-shipped scorer/conformance checks; if a sample corpus is available, a sample build. Never score an edit only against the run that motivated it.
+- **Phase checkpoint gate.** Packaging must pass `package_template.py`'s fail-closed phase checkpoint gate. If the template declares phases, it must ship a `scripts/phase_checkpoint.py` helper and the plan must call it for artifact-producing phases that do not already write reducer checkpoints. A skill reminder is not enough evidence.
 - **Adversarial pass.** A second set of eyes (subagent reviewer is fine) attacks the diff: does any change contradict another? Does an edit re-teach (or fight) core methodology? Did corpus content or user identifiers leak into template text? Does every change have its chain?
 - **Conformance.** New/changed fan-out agents still match John's agent event contract; `[[refs]]` resolve; apply.sh untouched and in sync.
 - **Owner sign-off.** Present: the changelog, the rejected list, the escalations. The owner decides; team consensus can overwrite any threshold in this skill.

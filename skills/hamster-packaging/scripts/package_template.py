@@ -24,10 +24,12 @@ Output structure (per joharnessburg/templates/README.md):
     workflows/<new-file>.js ... (saved dynamic workflows, from the fork's .claude/workflows/)
     plan_md_template.md (if present at fork root)
     claude_addon.md (if present at fork root)
+    .hamster/gate_report.json (packaging gates stamped into the shipped template)
 
 Build provenance is written to <fork>/.hamster/package_summary.json (the fork is
 the builder's scratch), NOT into the shipped template — so built templates carry
-no dev-history or dev-machine paths. The fork's John copy may use either the flat
+no dev-history or dev-machine paths. The shipped gate report contains only
+structural pass/fail evidence, not local paths. The fork's John copy may use either the flat
 (<=v0.1.12) or marketplace (v0.1.14+, plugins/<name>/) layout; paths are resolved
 accordingly. apply.sh defaults to <plugin-root>/templates/apply.sh.
 
@@ -220,6 +222,84 @@ def collect_changes(fork: Path, base_commit: str) -> list:
     return changes
 
 
+def run_phase_checkpoint_gate(
+    fork: Path,
+    plugin_root: Path,
+    *,
+    allow_override: bool = False,
+    override_reason: str | None = None,
+) -> dict:
+    """Gate template-defined phase monitoring before packaging.
+
+    A template that declares phases in plan_md_template.md must ship and invoke a
+    template-side checkpoint helper. This catches the common failure mode where
+    app/artifact phases run but never become John-visible in events/checkpoints.
+    """
+    plan = fork / "plan_md_template.md"
+    gate = {
+        "name": "phase_checkpoint",
+        "status": "pass",
+        "checks": {},
+        "notes": [],
+    }
+    if not plan.is_file():
+        gate["status"] = "not_applicable"
+        gate["notes"].append("no plan_md_template.md at fork root")
+        return gate
+
+    try:
+        text = plan.read_text(encoding="utf-8")
+    except OSError as exc:
+        gate["status"] = "fail"
+        gate["notes"].append(f"could not read plan_md_template.md: {exc}")
+        return gate
+
+    declares_phases = "### Phase " in text or "## Phases" in text
+    helper_path = plugin_root / "scripts" / "phase_checkpoint.py"
+    helper_exists = helper_path.is_file()
+    plan_mentions_helper = "phase_checkpoint.py" in text
+    plan_mentions_checkpoints = ".john/checkpoints/" in text
+
+    gate["checks"] = {
+        "declares_phases": declares_phases,
+        "helper_exists": helper_exists,
+        "plan_mentions_helper": plan_mentions_helper,
+        "plan_mentions_checkpoints": plan_mentions_checkpoints,
+    }
+
+    if not declares_phases:
+        gate["status"] = "not_applicable"
+        gate["notes"].append("plan_md_template.md does not declare phases")
+        return gate
+
+    missing = [
+        name for name, ok in (
+            ("scripts/phase_checkpoint.py", helper_exists),
+            ("plan references phase_checkpoint.py", plan_mentions_helper),
+            ("plan references .john/checkpoints/", plan_mentions_checkpoints),
+        )
+        if not ok
+    ]
+    if not missing:
+        gate["notes"].append("phase-bearing template has checkpoint helper wired")
+        return gate
+
+    if allow_override and override_reason:
+        gate["status"] = "overridden"
+        gate["override_reason"] = override_reason
+        gate["notes"].append("override accepted despite missing: " + ", ".join(missing))
+        return gate
+
+    gate["status"] = "fail"
+    gate["missing"] = missing
+    gate["notes"].append(
+        "phase-bearing templates must make phase completion John-visible; "
+        "add scripts/phase_checkpoint.py and call it from plan_md_template.md, "
+        "or pass --allow-missing-phase-checkpoint with a reason"
+    )
+    return gate
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -235,6 +315,19 @@ def main() -> int:
                         help="Path to apply.sh (default: <fork>/templates/apply.sh)")
     parser.add_argument("--smoke-test", action="store_true",
                         help="After packaging, run apply.sh --help to verify executability")
+    parser.add_argument(
+        "--allow-missing-phase-checkpoint",
+        action="store_true",
+        help=(
+            "Override the fail-closed gate that requires phase-bearing templates "
+            "to ship scripts/phase_checkpoint.py and wire it from plan_md_template.md."
+        ),
+    )
+    parser.add_argument(
+        "--phase-checkpoint-override-reason",
+        default=None,
+        help="Required explanation when --allow-missing-phase-checkpoint is used.",
+    )
     args = parser.parse_args()
 
     fork: Path = args.fork.resolve()
@@ -277,6 +370,20 @@ def main() -> int:
         err("Pass --apply-script if it's elsewhere.")
         return 1
 
+    phase_gate = run_phase_checkpoint_gate(
+        fork,
+        plugin_root,
+        allow_override=args.allow_missing_phase_checkpoint,
+        override_reason=args.phase_checkpoint_override_reason,
+    )
+    if phase_gate["status"] == "fail":
+        err("phase checkpoint gate failed")
+        for note in phase_gate["notes"]:
+            err(note)
+        if phase_gate.get("missing"):
+            err("missing: " + ", ".join(phase_gate["missing"]))
+        return 1
+
     try:
         base_skills = inventory_base_skills(fork, base_commit, rel_prefix)
         changes = collect_changes(fork, base_commit)
@@ -291,6 +398,9 @@ def main() -> int:
         "plugin_root": rel_prefix or ".",
         "translations": [],
         "warnings": [],
+        "gates": {
+            "phase_checkpoint": phase_gate,
+        },
     }
 
     overridden_skills = {}    # skill_name -> True (modified, dir still exists)
@@ -500,6 +610,21 @@ def main() -> int:
             "kind": "workflow",
             "filename": filename,
         })
+
+    gate_report = {
+        "generated_at": summary["packaged_at"],
+        "gates": summary["gates"],
+    }
+    gate_report_dir = output / ".hamster"
+    gate_report_dir.mkdir(exist_ok=True)
+    (gate_report_dir / "gate_report.json").write_text(
+        json.dumps(gate_report, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    summary["translations"].append({
+        "kind": "gate_report",
+        "path": ".hamster/gate_report.json",
+    })
 
     # Provenance lives with the fork (the builder's scratch), NOT inside the
     # shipped template — keeping built templates free of dev-history/paths.
