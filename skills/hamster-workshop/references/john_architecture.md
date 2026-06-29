@@ -1,6 +1,6 @@
 # John architecture — Hamster's working summary
 
-**Pinned to John v0.4.0 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg plugin (now a Claude Code **and** Codex harness) as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
+**Pinned to John v0.4.1 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg plugin (now a Claude Code **and** Codex harness) as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
 
 ## What John is
 
@@ -186,7 +186,7 @@ When the tech team ships production servers, the URL env vars get swapped — no
 
 Worker agents your template ships must emit events the core reducer understands; agents that drift from this contract generate `incomplete_chunks` warning noise on every reduce, sort wrongly, can overwrite each other's events on re-dispatch, and are invisible to the count gate. Every fan-out agent's events must:
 
-1. **Start with a `chunk_echo` event and end with a `chunk_complete` event** (per work unit) — the reducer's completeness check expects BOTH once either appears in a phase.
+1. **Start with a `chunk_echo` event and end with a `chunk_complete` event** (per work unit) — the reducer's completeness check expects BOTH once either appears in a phase. (v0.4.1+: the check is severity-split — a unit missing `chunk_complete` lands in `incomplete_chunks` (possibly-unfinished work / WARNING), one that only skipped its echo lands in `chunks_missing_echo` (INFO, not incomplete). The scorecard + `workspace_status` also expose a `phase_provenance` block so an artifact-only phase that emits no events/checkpoints is flagged rather than silently dropped.)
 2. **Carry `timestamp` (ISO-8601 UTC) and `subagent_id` at the top level** of every event — the reducer's deterministic order sorts by timestamp.
 3. **Use subagent-id-prefixed filenames** (`<subagent-id>-<suffix>.json`) — keeps the log append-only when a unit is re-dispatched to a second worker.
 4. **Write atomically** — temp name first, then rename to the final `.json` (a reduce can race a mid-write file).
@@ -223,7 +223,7 @@ Your template customizes any of these moves the apps in your family need to be d
 
 ## When this rots
 
-This summary is pinned to John v0.4.0. When John updates, this doc will drift. To recover:
+This summary is pinned to John v0.4.1. When John updates, this doc will drift. To recover:
 
 1. Re-read live `$JOHARNESSBURG_PATH/PLAN.md` (the workspace plan in the joharnessburg repo).
 2. Re-read live `$JOHARNESSBURG_PATH/README.md` and `$JOHARNESSBURG_PATH/plugins/joharnessburg/templates/README.md`.
