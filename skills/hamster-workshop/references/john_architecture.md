@@ -1,6 +1,6 @@
 # John architecture — Hamster's working summary
 
-**Pinned to John v0.4.1 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg plugin (now a Claude Code **and** Codex harness) as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
+**Pinned to John v0.4.2 (joharnessburg) at the time of writing.** This summary captures the layout, skills, hooks, and pipeline mechanics of the joharnessburg plugin (now a Claude Code **and** Codex harness) as Hamster Claude needs to understand them to author templates. When John updates, this doc may rot — see the footer for how to recover.
 
 ## What John is
 
@@ -199,7 +199,7 @@ Don't re-derive the shapes: copy them from John core's `agents/knowledge-extract
 John structures self-improvement as **evolution rings**: Ring 0 = the project (lessons ledger, sign-off-gated local override drafts, and a held-out-gated training loop for workerLLM skills where a scorer exists); **Ring 1 = your template** — the unit of domain learning; Ring 2 = John core (human-driven only). The trainable surface is exactly *what you changed*: the fold of "how to think" into domain "what to do" (your overrides, additive skills, plan skeleton, agents, worker prompts). Two consequences for authoring:
 
 1. **A template that wants to evolve ships its feedback design**: a scorer / eval set + a one-line declaration of where feedback comes from (build-session eval, app-runtime instrumentation, end-user corrections). Declare it via a fork-root `evolution.json` (the packager folds it into `template.json` as an `evolution` block and warns when it's incomplete). No scorer declared = the template still works, but its worker skills can't be trained and Ring-1 evolution runs on process evidence + lessons only.
-2. **Run reports are your template's return channel.** Users assemble them with `/john:report` (scrubbed of corpus content) and share them manually; the `hamster-evolution` skill consumes accumulated reports and emits the template's next version as a bounded, evidence-named diff.
+2. **Run reports are your template's return channel.** Users assemble them with `/john:report` (scrubbed of corpus content) and share them manually; the `hamster-evolution` skill consumes accumulated reports and emits the template's next version as a bounded, evidence-named diff. (v0.4.2+: `/john:report` also emits two LOCAL auditor-legibility manifests into `.john/` — `PROVENANCE.json` (run identity: John version, template name+version, corpus inputs, observed phases, run window) and `SELF_EVAL_MANIFEST.json` (how to re-run the scorecard) — so a finished run is discoverable by external eval tooling without reading app code. Where a produced app writes its *results* (an `APP_RESULTS_MANIFEST`) is **template territory** — John core ships no app-results convention, so declare and emit it from your template if your apps need it.)
 
 The evaluation surface (the scorecard rubric, the reducer's gates, the event contract) is frozen core — templates build *on* it, never redefine it.
 
@@ -223,7 +223,7 @@ Your template customizes any of these moves the apps in your family need to be d
 
 ## When this rots
 
-This summary is pinned to John v0.4.1. When John updates, this doc will drift. To recover:
+This summary is pinned to John v0.4.2. When John updates, this doc will drift. To recover:
 
 1. Re-read live `$JOHARNESSBURG_PATH/PLAN.md` (the workspace plan in the joharnessburg repo).
 2. Re-read live `$JOHARNESSBURG_PATH/README.md` and `$JOHARNESSBURG_PATH/plugins/joharnessburg/templates/README.md`.
