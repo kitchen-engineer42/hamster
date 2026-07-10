@@ -2,7 +2,7 @@
 
 John ships a small set of **platform tools** — utilities that live at workspace level (not inside the plugin) and serve any template that needs them. Templates *use* these tools; templates do *not* ship them. If a template needs a tool the platform doesn't have, the right move is to surface the gap to the user (who decides whether to add it to the platform), not to bundle the tool inside the template.
 
-## Current external tools (John v0.5.0 workspace contract)
+## Current external tools (John v0.5.1 workspace contract)
 
 These clients are gitignored workspace services. A fresh John or Hamster clone
 does not contain them. Do not make them template dependencies or claim that the
@@ -12,11 +12,11 @@ repository provisions them.
 
 A FastAPI server wrapping SiliconFlow + DeepSeek (today; the URL contract is provider-agnostic so any compatible production server can be swapped in later).
 
-- **Plugin-side caller**: `$JOHN_LLM_CLIENT_URL` env var (default `http://localhost:8500`). The plugin's `workerllm-runtime` skill teaches layer-3 Claude how to call this.
+- **Plugin-side caller**: `$JOHN_LLM_CLIENT_URL` env var (default `http://localhost:8500`). The plugin's `workerllm-runtime` skill teaches the produced app how to call this.
 - **API contract** (live): see `$JOHARNESSBURG_PATH/../local_clients/llm/README.md` if the workspace is laid out as you expect, or browse `https://github.com/kitchen-engineer42/joharnessburg` issues/docs for the canonical contract.
 - **Endpoints**: `GET /healthz` (liveness), `GET /readyz` (provider readiness + capabilities), `POST /v1/chat/completions` (typed OpenAI-compatible subset). Malformed/unsupported fields return 422; streaming remains explicitly unsupported.
 - **When to embed in a template**: when produced apps need to call workerLLMs at runtime — for in-app inference, per-request classification, formatting, agentic flows. The `workerllm-runtime` skill is the integration point; templates rarely need to override it, only customize the prompts/models.
-- **When NOT to embed**: when the produced app is a static knowledge bundle (e.g., a slide-deck builder where all the LLM work happens during the build, not at app runtime). In that case the workerLLM is used during the BUILD phase by layer-3 Claude, but the produced app doesn't need to keep calling it.
+- **When NOT to embed**: when the produced app is a static knowledge bundle and all model work happens during the build. The John-equipped agent may still use model assistance, but the produced app does not need a runtime client.
 
 ### `local_clients/ppx/` — PDF parser client
 
@@ -64,7 +64,7 @@ This keeps the template portable. A template that hardcodes "use our specific in
 
 ## When this rots
 
-The tool list above is pinned to John v0.5.0. The external workspace may vary. To re-check:
+The tool list above is pinned to John v0.5.1. The external workspace may vary. To re-check:
 
 1. `ls $JOHARNESSBURG_PATH/../local_clients/` — see what clients exist locally.
 2. Check joharnessburg/PLAN.md for "out of scope" → those tools haven't landed yet.

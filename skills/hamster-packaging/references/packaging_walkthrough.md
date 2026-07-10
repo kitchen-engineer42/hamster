@@ -14,7 +14,12 @@
 6. Package:
 
    ```sh
-   python3 .claude/skills/hamster-packaging/scripts/package_template.py \
+   HAMSTER_PACKAGING_DIR=
+   for candidate in .claude/skills/hamster-packaging .agents/skills/hamster-packaging; do
+     [ -d "$candidate/scripts" ] && HAMSTER_PACKAGING_DIR=$candidate && break
+   done
+   test -n "$HAMSTER_PACKAGING_DIR" || { echo "hamster-packaging skill not loaded" >&2; exit 1; }
+   python3 "$HAMSTER_PACKAGING_DIR/scripts/package_template.py" \
      --fork forks/my-template \
      --output templates/my-template \
      --template-version 0.1.0 \
@@ -33,7 +38,7 @@
 9. Re-run the standalone validator after relocating a copy if desired:
 
    ```sh
-   python3 .claude/skills/hamster-packaging/scripts/validate_template.py \
+   python3 "$HAMSTER_PACKAGING_DIR/scripts/validate_template.py" \
      /relocated/my-template \
      --john-install /clean/joharnessburg/plugins/joharnessburg \
      --initialize

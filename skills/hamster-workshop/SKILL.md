@@ -21,9 +21,9 @@ Why this design: it lets you think in terms of "modify John" (which is intuitive
 
 Three access patterns, used together:
 
-1. **The bundled architecture summary** (`references/john_architecture.md`) — your always-have-in-mind baseline. Read it whenever you need the nested layout, hooks and event contracts, template format, or provider surfaces. It is pinned to John v0.5.0. If your template adds fan-out agents, use John's `emit_event.py`, run-ledger identity, and canonical agent-generation contract rather than inventing a parallel format.
+1. **The bundled architecture summary** (`references/john_architecture.md`) — your always-have-in-mind baseline. Read it whenever you need the nested layout, hooks and event contracts, template format, or provider surfaces. It is pinned to John v0.5.1. If your template adds fan-out agents, use John's `emit_event.py`, run-ledger identity, and canonical agent-generation contract rather than inventing a parallel format.
 
-2. **Reference example templates** at `<hamster-checkout>/examples/{slides-from-textbook,doc-verification}/`. Each is a complete v0.1.2 dual-provider template with exact John v0.5.0 pin, canonical `apply.sh`, preserved Claude guidance, Codex guidance/agents, overrides, and additive skills. Use them to understand the format, not as content to copy wholesale.
+2. **Reference example templates** at `<hamster-checkout>/examples/{slides-from-textbook,doc-verification}/`. Each is a complete v0.1.3 dual-provider template with exact John v0.5.1 pin, shared domain guidance, provider-specific execution adapters, canonical `apply.sh`, overrides, and additive skills. Use them to understand the format, not as content to copy wholesale.
 
 3. **Live reads of `$JOHARNESSBURG_PATH`** — for skill bodies, script implementations, current hook behavior. Spawn subagents for deep reads. Don't load whole skill files into your main context unless you're about to override them.
 
@@ -41,7 +41,7 @@ When deciding how to make a change, ask:
 |---|---|---|
 | Replace a core skill's content entirely | Edit `<fork>/plugins/joharnessburg/skills/<name>/` | `skills/_override/<name>/` (full replacement) |
 | Add a brand-new skill | Create `<fork>/plugins/joharnessburg/skills/<new-name>/SKILL.md` | `skills/<new-name>/` (additive) |
-| Add a script, command, or Claude subagent | Create under `<fork>/plugins/joharnessburg/{scripts,commands,agents}/` | Same path in template (additive) |
+| Add a script, command, or canonical Markdown subagent | Create under `<fork>/plugins/joharnessburg/{scripts,commands,agents}/` | Same path in template (additive) |
 | Add a Codex agent | Generate/add `<fork>/plugins/joharnessburg/codex/agents/<name>.toml` | `codex/agents/<name>.toml` |
 | Remove a core skill | Delete `<fork>/plugins/joharnessburg/skills/<name>/` | `<name>` line appended to `skills/_delete` |
 | Ship a starter PLAN.md skeleton | Create `<fork>/plan_md_template.md` at fork root | `plan_md_template.md` at template root |
@@ -71,7 +71,7 @@ Deleting a core skill is fully supported (the packager translates it to a `_dele
 
 - **You want to replace a meta skill with a more domain-specific skill** — e.g., delete `chunking` and add `slide-chunking`. Functionally similar to override-with-rename. **This is fine**, but worth a heads-up to yourself (and the user) that:
   - It looks like a deletion in git, but you're really replacing.
-  - Layer-3 Claude won't find `chunking` anymore — anywhere it's referenced (other skills, `claude_addon.md`, `plan_md_template.md`) needs to point at the new name instead.
+  - The future John-equipped agent won't find `chunking` anymore — every shared or provider-specific reference needs to point at the new name.
   - You're more committed than with an override — you can't easily undo by removing the new skill alone; the original is gone.
 
 - **You want a skill gone with no replacement** — e.g., delete `platform-credits` because this template's produced apps don't have priced operations. This is the safer kind of deletion; minimal blast radius.
@@ -106,7 +106,7 @@ If a template fundamentally cannot be built without a platform-level change (e.g
 2. Surface the platform-level need to the user as a separate proposal.
 3. Resume template work after platform-side changes land (which is outside your scope to make).
 
-Don't fake it by stuffing platform logic into a template skill — that's the brittleness path. Templates that depend on out-of-scope platform changes should *say so* (in `template.json` description, in `claude_addon.md`) rather than hiding the dependency.
+Don't fake it by stuffing platform logic into a template skill — that's the brittleness path. Templates that depend on out-of-scope platform changes should say so in `template.json` and shared project guidance rather than hiding the dependency.
 
 ## When this skill triggers
 
@@ -125,6 +125,6 @@ You're done with workshop-mode when:
 - Every modification in your fork is one of the supported kinds (override / additive / delete / template root files). Run `git status` in the fork to check.
 - For every unsupported modification, you've either reverted it or surfaced a proposal to the user.
 - The skills in the fork form a coherent set (no skill references something that was deleted).
-- Layer-3 Claude could read the template-applied-John, run ralph_loop, and produce an app that matches your design intent.
+- A future John-equipped agent could read the template-applied John, run ralph_loop, and produce an app that matches your design intent.
 
 Then `hamster-packaging` is the natural next trigger.

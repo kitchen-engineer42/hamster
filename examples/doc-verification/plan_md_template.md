@@ -1,6 +1,6 @@
 # PLAN.md — {project_name}
 
-*Created by `/john:init` on {date}, using the **doc-verification** template (KC-equivalent). Edit freely; this is your living plan.*
+*Created by John initialization on {date}, using the **doc-verification** template (KC-equivalent). Edit freely; this is your living plan.*
 
 ## Project intent
 
@@ -38,7 +38,7 @@
 
 ### Phase 3: author skill per rule
 
-- Intent: for each rule, write byte-identical Claude and Codex skills (SKILL.md + check_R<id>.py + references + samples) per [[packaging]]'s override.
+- Intent: for each rule, write byte-identical provider-discoverable skills (SKILL.md + check_R<id>.py + references + samples) per [[packaging]]'s override.
 - Skills to invoke: `packaging` (template-overridden), `subagent-dispatch` (one subagent per rule)
 - Required artifacts: matching `<project>/.claude/skills/rule-R<id>/` and `<project>/.agents/skills/rule-R<id>/` for each rule
 - Done criteria: every accepted rule has both skill directories with matching hashes and all required files
@@ -84,4 +84,4 @@
 
 ## Log
 
-- {date}: PLAN.md scaffolded by `/john:init` using the doc-verification template.
+- {date}: PLAN.md scaffolded by John using the doc-verification template.

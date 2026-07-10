@@ -1,10 +1,5 @@
-## Active template: slides-from-textbook
+## Codex execution: slides-from-textbook
 
-Use the same slide knowledge and rendering contracts as the Claude guidance.
-Package every produced skill byte-identically under both `.claude/skills/` and
-`.agents/skills/`. For vertical fan-out, use John's Codex run ledger and native
-subagent waves; do not translate or execute the Claude dynamic-workflow asset.
+Run large slide extraction or rendering fan-outs as native Codex subagent waves over John's `.john/runs/` ledger. Reconcile receipts and events before reduction; do not execute Claude dynamic-workflow assets.
 
-Activate this applied template project-locally with John's
-`codex-template-activation` skill. Applied John replaces vanilla John in this
-project session.
+Activate the merged plugin project-locally, verify the applied listing, disable vanilla John for this project, review the applied hooks, and restart Codex.

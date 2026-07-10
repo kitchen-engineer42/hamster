@@ -32,7 +32,7 @@ Then decide **where each accepted lesson lands** — the classification that kee
 - **Core asset of the template** (SKILL.md bodies, plan skeleton, reusable scripts): every project of the domain needs it.
 - **Perimeter asset** (`references/`, worked examples, edge-case notes): real but conditional — loaded on demand.
 - **Ad-hoc** (leave it out): a judgment call each project should make fresh. Folding everything in kills the wide tunnel; "no change" is a legitimate verdict for a lesson.
-- **Not ours — core John**: apply the sufficiency test. *A skill goes into John so John thinks correctly; into a template so app-building Claude doesn't have to think from scratch.* If the failing passage is domain-invariant teaching (it would be wrong the same way in every template), write a **core proposal** in the changelog's "escalations" section for the owner to file upstream — never edit core, never work around it by re-teaching core methodology inside the template.
+- **Not ours — core John**: apply the sufficiency test. *A skill goes into John so John thinks correctly; into a template so the John-equipped app builder doesn't have to think from scratch.* If the failing passage is domain-invariant teaching, write a **core proposal** in the changelog's "escalations" section for the owner to file upstream — never edit core or work around it by re-teaching core methodology inside the template.
 
 ## Producing vNext
 

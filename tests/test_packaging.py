@@ -9,6 +9,7 @@ from pathlib import Path
 
 from tests.helpers import (
     JOHN_PLUGIN,
+    REPO,
     SCRIPTS,
     add_dual_template_changes,
     build_john_repo,
@@ -86,6 +87,58 @@ class TestPackage(unittest.TestCase):
             )
             self.assertNotIn(str(root), json.dumps(report))
 
+    def test_codex_only_installed_package_scaffolds_and_packages(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            boot = subprocess.run(
+                [str(REPO / "bootstrap_hamster.sh"), "--provider", "codex"],
+                cwd=root,
+                env={**os.environ, "HAMSTER_CLI": str(REPO)},
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(boot.returncode, 0, boot.stderr)
+            self.assertFalse((root / ".claude").exists())
+            scripts = root / ".agents/skills/hamster-packaging/scripts"
+            source = build_john_repo(root)
+            scaffold_result = subprocess.run(
+                [
+                    sys.executable,
+                    str(scripts / "scaffold_fork.py"),
+                    "--name",
+                    "codex-template",
+                    "--joharnessburg-path",
+                    str(source),
+                ],
+                cwd=root,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(scaffold_result.returncode, 0, scaffold_result.stderr)
+            fork = root / "forks/codex-template"
+            add_dual_template_changes(fork)
+            output = root / "templates/codex-template"
+            package_result = subprocess.run(
+                [
+                    sys.executable,
+                    str(scripts / "package_template.py"),
+                    "--fork",
+                    str(fork),
+                    "--output",
+                    str(output),
+                    "--template-version",
+                    "1.2.3",
+                    "--provider",
+                    "both",
+                    "--smoke-test",
+                ],
+                cwd=root,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(package_result.returncode, 0, package_result.stderr)
+            self.assertTrue((output / "template.json").is_file())
+
     def test_warning_validation_symlink_and_timeout_leave_no_partial_package(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -139,11 +192,11 @@ class TestPackage(unittest.TestCase):
             skill.write_text(skill.read_text().replace("name: chunking", "name: renamed-chunking", 1))
             (fork / "project_addon.md").write_text("# Shared guidance\n")
             output = root / "templates/test-template"
-            result = package(fork, output, "--requires-john", "0.5.0")
+            result = package(fork, output, "--requires-john", "0.5.1")
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("chunking", (output / "skills/_delete").read_text().splitlines())
             self.assertTrue((output / "skills/renamed-chunking/SKILL.md").is_file())
-            self.assertEqual(json.loads((output / "template.json").read_text())["requires_john"], "0.5.0")
+            self.assertEqual(json.loads((output / "template.json").read_text())["requires_john"], "0.5.1")
 
     def test_template_version_is_required(self):
         with tempfile.TemporaryDirectory() as td:
@@ -169,6 +222,47 @@ class TestPackage(unittest.TestCase):
             result = package(fork, output, "--smoke-test", "--timeout", "0")
             self.assertEqual(result.returncode, 1)
             self.assertFalse(output.exists())
+
+
+class TestShippedExamples(unittest.TestCase):
+    def test_examples_are_relocated_real_applied_and_initialized(self):
+        canonical_apply = JOHN_PLUGIN / "templates/apply.sh"
+        for name in ("slides-from-textbook", "doc-verification"):
+            with self.subTest(example=name):
+                example = REPO / "examples" / name
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        str(SCRIPTS / "validate_template.py"),
+                        str(example),
+                        "--john-install",
+                        str(JOHN_PLUGIN),
+                        "--initialize",
+                    ],
+                    capture_output=True,
+                    text=True,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+                metadata = json.loads((example / "template.json").read_text())
+                self.assertEqual(metadata["version"], "0.1.3")
+                self.assertEqual(metadata["requires_john"], "0.5.1")
+                self.assertEqual(metadata["providers"], ["claude", "codex"])
+                self.assertEqual(
+                    hashlib.sha256((example / "apply.sh").read_bytes()).hexdigest(),
+                    hashlib.sha256(canonical_apply.read_bytes()).hexdigest(),
+                )
+                self.assertTrue((example / "project_addon.md").is_file())
+                self.assertIn(
+                    "dynamic-workflow",
+                    (example / "claude_addon.md").read_text(),
+                )
+                codex_guidance = (example / "agents_addon.md").read_text()
+                self.assertIn(".john/runs/", codex_guidance)
+                self.assertIn("project-locally", codex_guidance)
+                self.assertNotIn(
+                    "Claude guidance",
+                    codex_guidance,
+                )
 
 
 if __name__ == "__main__":

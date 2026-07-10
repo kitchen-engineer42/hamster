@@ -16,19 +16,19 @@ The combined product is a toB platform optimized for shipping toC-quality apps a
 
 ## The trade-off — generalization vs domain expertise
 
-Vanilla Claude Code is fully general. John (the harness) trades some generalization for better knowledge-engineering throughput. A John template trades further generalization for *more* domain expertise — better accuracy and ergonomics inside its app-family, less ability to handle outliers.
+A vanilla coding agent is fully general. John trades some generalization for better knowledge-engineering throughput. A John template trades further generalization for *more* domain expertise — better accuracy and ergonomics inside its app family, less ability to handle outliers.
 
 You're one notch further on this scale than John. The danger isn't going too general (then why build a template?) — it's tipping too far toward overfit. Signs you've tipped:
 
 - The template only produces apps that look like one specific sample input.
 - A second project from the same app-family wouldn't fit the template without skill rewrites.
-- Layer-3 Claude has so much pre-baked structure it can't adapt to corpus quirks.
+- The future John-equipped agent has so much pre-baked structure it can't adapt to corpus quirks.
 
 When you spot a tipping point, surface it to the user before locking. "I'm about to fix severity to high/medium/low — but if next month's corpus has 5 severity levels, this breaks. Lock it, or keep it open?"
 
 ## The "good toC product" instincts to keep in mind
 
-These produce a *useful* app, not just a *correct* one. They land in the template's app mechanism (the third of the four app-type decisions) and in the build pipeline (how layer-3 Claude reasons during the build).
+These produce a *useful* app, not just a *correct* one. They land in the template's app mechanism and in the build pipeline that guides the future John-equipped agent.
 
 - **First minute matters.** A user lands on a produced app — what do they see? Can they get a result in their first interaction? Templates should encourage produced apps to have a working golden path before any polish.
 - **Reversibility is comfort.** Produced apps should let users undo, re-try, change their mind without losing context. When the app mechanism includes a "results page", it should include "back to inputs" — not a dead end.
@@ -41,28 +41,28 @@ These don't need to live as separate skills inside the template — they're deci
 
 These produce a *durable* template — one that doesn't rot, one that other team members can pick up, one that handles edge cases without re-authoring.
 
-- **Operability over elegance.** A template whose `claude_addon.md` explains the failure modes is more valuable than a template with beautiful but undocumented skills.
-- **Templates are contracts, not just scaffolding.** When a template fixes the schema (e.g., "every rule has source_ref"), it's promising that all downstream apps will have that field. Layer-3 Claude relies on the contract. Don't promise what you can't enforce; if a schema field can vary per project, leave it as a controlled-vocab in the template and let layer-3 Claude choose.
+- **Operability over elegance.** A template whose shared or provider-specific addon explains the failure modes is more valuable than a template with beautiful but undocumented skills.
+- **Templates are contracts, not just scaffolding.** When a template fixes the schema (e.g., "every rule has source_ref"), it's promising that all downstream apps will have that field. The future John-equipped agent relies on the contract. Don't promise what you can't enforce; if a schema field can vary per project, leave it as a controlled vocabulary and let the project settle it.
 - **Tools belong to the platform, not the template.** ppx and llm_client come from the platform (joharnessburg + local_clients). Templates *use* them. If a template needs a tool the platform doesn't have, the template doesn't ship the tool — Hamster surfaces the gap to the user, who decides whether to add it to the platform.
 - **Failure should be loud, attributable, and locally-fixable.** If a produced app fails, the failure should point at a specific skill or phase, not at "John". The template's `code-quality-guardrails` skill (per John's own scaffolding) should be tuned per template to surface this.
 
 ## Operational tactics — distilled from external PM wisdom
 
-`references/lenny_distillation.md` collects ~11 tactical moves from Lenny's Substack canon that survived a "previously-unknown to SOTA Claude" bar. Skim it before any template design that involves user-facing apps — a few of these map directly to template decisions you'll make:
+`references/lenny_distillation.md` collects a small set of tactical product moves that clear the bar for non-obvious, operationally useful guidance. Skim it before template design involving user-facing apps.
 
 - **Collison Install** → don't ship a template by publishing it; ship by sitting with the first internal app team through their first build.
 - **Eval the eval** → every template's eval rig must include a small human-labeled gold set; LLM-judge agreement is tracked, not assumed.
 - **Binary not Likert** → template quality gates use pass/fail, not 1-5 scores.
 - **Decision tenets reasonably-arguable opposite** → when the team writes down template-authoring tenets, each one should be a real choice, not a platitude.
 
-Most standard PM frameworks (JTBD, ICE, North Star, etc.) are *not* in that reference — they're well-known to SOTA Claude and don't need restating. Reach for them naturally if they fit.
+Most standard PM frameworks are not repeated in that reference; the active coding agent already knows them. Reach for them naturally if they fit.
 
 ## Surfacing trade-offs to the user
 
 The user is the team lead with both toC + toB PM background. They want to see the trade-offs. Some good moves:
 
 - **"Here are three template scopes I'm considering. Each trades X for Y. Which feels right?"** AskUserQuestion with three options. Forces a real choice; they'll often surface a fourth.
-- **"I'm going to fix schema field `severity` to a controlled vocab [low/medium/high]. The cost: future projects with 5 levels need a template override. The benefit: layer-3 Claude has a clean contract. Lock it?"** Surface the cost AND the benefit. Don't just ask "OK?".
+- **"I'm going to fix schema field `severity` to a controlled vocab [low/medium/high]. The cost: future projects with 5 levels need a template override. The benefit: the John-equipped agent gets a clean contract. Lock it?"** Surface the cost and benefit. Don't just ask "OK?".
 - **"This is the template doing the work, not John. If we move this logic up into John itself, every template would inherit it. Worth proposing as a core-John change?"** When you spot platform-vs-template trade-offs, surface them.
 
 The user explicitly said: overkill in discussion is fine, not in development. So discuss freely; implement tight.

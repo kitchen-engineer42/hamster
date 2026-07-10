@@ -1,6 +1,6 @@
 # Lenny-Skills Distillation
 
-Distilled from refoundai/lenny-skills, surveyed 2026-05-26. Items below cleared a high bar: previously-underweighted by SOTA Claude, operationally crisp, and load-bearing for the combined toC product UX + toB platform lens that templates+John applies. Standard PM frameworks (JTBD, Sean Ellis 40%, North Star, working backwards, retention curves) are deliberately omitted.
+Distilled from refoundai/lenny-skills, surveyed 2026-05-26. Items below cleared a high bar: non-obvious to a strong coding agent, operationally crisp, and load-bearing for the combined toC product UX + toB platform lens that templates+John applies. Standard PM frameworks are deliberately omitted.
 
 ## The Collison Install — ship the implementation, not the contract
 

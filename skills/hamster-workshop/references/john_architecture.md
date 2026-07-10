@@ -1,6 +1,6 @@
 # John architecture — Hamster working summary
 
-**Pinned to John v0.5.0.** Re-read the live checkout before overriding a core
+**Pinned to John v0.5.1.** Re-read the live checkout before overriding a core
 asset; the footer lists the refresh path.
 
 ## Repository and plugin boundaries
@@ -35,7 +35,7 @@ only to loopback in this release.
 ## Three runtime levels
 
 1. Hamster authors a template from a John fork.
-2. John-equipped Claude or Codex applies that template while building an app.
+2. A John-equipped Claude Code or Codex session applies that template while building an app.
 3. workerLLMs and background jobs run inside the produced app.
 
 Do not confuse build-session orchestration with produced-app runtime jobs.
@@ -84,14 +84,17 @@ capability-detected experimental CSV engine consume this same ledger.
 
 ## Provider surfaces
 
-Claude remains first-class:
+Claude Code and Codex are equal recommended runtimes over the shared John
+state. Their execution adapters remain distinct.
+
+Claude Code:
 
 - slash commands live in `commands/`;
 - custom agents are canonical `agents/*.md`;
 - stable high-volume work may use Claude dynamic workflows;
 - an applied template launches with `claude --plugin-dir <merged-plugin>`.
 
-Codex support is additive:
+Codex:
 
 - command equivalents are skills;
 - `sync_codex_agents.py --check|--write` deterministically derives shipped and
@@ -177,7 +180,7 @@ install skip-if-exists.
 
 ## Refreshing this pin
 
-When John moves beyond v0.5.0:
+When John moves beyond v0.5.1:
 
 1. Read live `CONTEXT.md`, `README.md`, and
    `plugins/joharnessburg/templates/README.md`.

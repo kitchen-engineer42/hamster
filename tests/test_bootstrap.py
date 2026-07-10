@@ -23,6 +23,7 @@ class TestBootstrap(unittest.TestCase):
             root = Path(td)
             result = self.run_bootstrap(root)
             self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue((root / "HAMSTER.md").is_file())
             self.assertTrue((root / "CLAUDE.md").is_file())
             self.assertTrue((root / "AGENTS.md").is_file())
             for source in sorted((REPO / "skills").rglob("*")):
@@ -34,17 +35,32 @@ class TestBootstrap(unittest.TestCase):
                 self.assertEqual(hashlib.sha256(claude.read_bytes()).digest(), hashlib.sha256(codex.read_bytes()).digest())
             protected = root / ".agents/skills/hamster-orientation/SKILL.md"
             protected.write_text("user-owned\n")
+            shared = root / "HAMSTER.md"
+            shared.write_text("user-shared\n")
             result = self.run_bootstrap(root)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(protected.read_text(), "user-owned\n")
+            self.assertEqual(shared.read_text(), "user-shared\n")
 
     def test_single_provider_and_invalid_provider(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             result = self.run_bootstrap(root, "codex")
             self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue((root / "HAMSTER.md").is_file())
             self.assertFalse((root / ".claude").exists())
             self.assertTrue((root / ".agents/skills").is_dir())
+            self.assertFalse((root / "CLAUDE.md").exists())
+            self.assertTrue((root / "AGENTS.md").is_file())
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            result = self.run_bootstrap(root, "claude")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue((root / "HAMSTER.md").is_file())
+            self.assertTrue((root / ".claude/skills").is_dir())
+            self.assertFalse((root / ".agents").exists())
+            self.assertTrue((root / "CLAUDE.md").is_file())
+            self.assertFalse((root / "AGENTS.md").exists())
         with tempfile.TemporaryDirectory() as td:
             result = self.run_bootstrap(Path(td), "wrong")
             self.assertEqual(result.returncode, 2)

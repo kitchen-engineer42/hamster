@@ -11,7 +11,12 @@ release artifact. Never edit a published template by hand.
 ## Scaffold a clean fork
 
 ```sh
-python3 .claude/skills/hamster-packaging/scripts/scaffold_fork.py \
+HAMSTER_PACKAGING_DIR=
+for candidate in .claude/skills/hamster-packaging .agents/skills/hamster-packaging; do
+  [ -d "$candidate/scripts" ] && HAMSTER_PACKAGING_DIR=$candidate && break
+done
+test -n "$HAMSTER_PACKAGING_DIR" || { echo "hamster-packaging skill not loaded" >&2; exit 1; }
+python3 "$HAMSTER_PACKAGING_DIR/scripts/scaffold_fork.py" \
   --name <safe-template-slug> \
   --joharnessburg-path "$JOHARNESSBURG_PATH"
 ```
@@ -24,7 +29,12 @@ same-parent stage, records the immutable base commit, then atomically publishes
 ## Package the fork
 
 ```sh
-python3 .claude/skills/hamster-packaging/scripts/package_template.py \
+HAMSTER_PACKAGING_DIR=
+for candidate in .claude/skills/hamster-packaging .agents/skills/hamster-packaging; do
+  [ -d "$candidate/scripts" ] && HAMSTER_PACKAGING_DIR=$candidate && break
+done
+test -n "$HAMSTER_PACKAGING_DIR" || { echo "hamster-packaging skill not loaded" >&2; exit 1; }
+python3 "$HAMSTER_PACKAGING_DIR/scripts/package_template.py" \
   --fork forks/<name> \
   --output templates/<name> \
   --template-version 0.1.0 \
@@ -66,7 +76,7 @@ paths.
 | Modify existing `plugins/<john>/skills/<name>/` | `skills/_override/<name>/` full replacement |
 | Add a skill | `skills/<name>/` |
 | Delete a whole skill | `skills/_delete` |
-| Add scripts, commands, or Claude agents | same additive path |
+| Add scripts, commands, or canonical Markdown agents | same additive path |
 | Add `plugins/<john>/codex/agents/*.toml` | `codex/agents/*.toml` |
 | Add root `project_addon.md` | shared CLAUDE.md + AGENTS.md guidance |
 | Add root `claude_addon.md` / `agents_addon.md` | provider-specific guidance |

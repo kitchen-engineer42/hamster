@@ -1,6 +1,6 @@
 ---
 name: packaging
-description: Emit each rule as byte-identical Claude and Codex skills under <project>/.claude/skills/rule-R<id>/ and <project>/.agents/skills/rule-R<id>/ with SKILL.md + check_R<id>.py + references/ + assets/samples/. Use this skill in the per-rule authoring phase of a doc-verification project.
+description: Emit each rule as byte-identical provider-discoverable skills in both project skill trees, with SKILL.md, a deterministic or hybrid check script, references, and labeled samples. Use this skill in the per-rule authoring phase of a doc-verification project.
 metadata:
   triggers:
     - package the rules

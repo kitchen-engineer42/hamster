@@ -77,7 +77,7 @@ After all per-slide HTML fragments are rendered, the assembler:
 3. Injects `{{N_SLIDES}}` and `{{NAV_DOTS}}` placeholders in the shell.
 4. Writes the final HTML to `<project>/<app-output>/deck.html`.
 
-The assembler is implemented inline (in the render phase, layer-2 Claude does it via Bash + sed/python). No separate script needed for v1.
+The John-equipped agent implements the assembler inline during the render phase with shell or Python tooling. No separate template script is needed for this example.
 
 ## Done criteria for the render phase
 

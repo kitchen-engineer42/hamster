@@ -36,8 +36,8 @@ case "$provider" in
 esac
 
 HAMSTER_CLI=${HAMSTER_CLI:-$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)}
-if [ ! -d "$HAMSTER_CLI/skills" ] || [ ! -f "$HAMSTER_CLI/CLAUDE.md" ] || [ ! -f "$HAMSTER_CLI/AGENTS.md" ]; then
-  echo "Error: $HAMSTER_CLI is missing skills/, CLAUDE.md, or AGENTS.md." >&2
+if [ ! -d "$HAMSTER_CLI/skills" ] || [ ! -f "$HAMSTER_CLI/HAMSTER.md" ] || [ ! -f "$HAMSTER_CLI/CLAUDE.md" ] || [ ! -f "$HAMSTER_CLI/AGENTS.md" ]; then
+  echo "Error: $HAMSTER_CLI is missing skills/, HAMSTER.md, CLAUDE.md, or AGENTS.md." >&2
   exit 1
 fi
 if find "$HAMSTER_CLI/skills" -type l -print -quit | grep . >/dev/null; then
@@ -83,6 +83,8 @@ install_memory() {
     installed=$((installed + 1))
   fi
 }
+
+install_memory "$HAMSTER_CLI/HAMSTER.md" HAMSTER.md
 
 if [ "$provider" = claude ] || [ "$provider" = both ]; then
   install_skills .claude/skills

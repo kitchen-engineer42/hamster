@@ -17,7 +17,7 @@ These four decisions affect each other, and together they define how to build a 
 
 When John builds one app, the four decisions are concrete: this rule format, this rule schema, this verification flow, these specific phases. When Hamster builds a template, they are **shapes** — categories filled in by the runtime when an app is actually being built.
 
-Concretely: a doc-verification template fixes the knowledge format (rules), the schema shape (source / trigger / judgement / output / glossary — but field names and required-ness can vary per project), the app mechanism (parse → chunk → apply-rules → surface-violations), and the build pipeline (the phases of ralph_loop, the role of each subagent). The *content* of any specific rule, the *exact* schema field set, the *specific* glossary terms — those land at app-build time, by layer-3 Claude in a John runtime session.
+Concretely: a doc-verification template fixes the knowledge format (rules), schema shape, app mechanism, and build pipeline. The *content* of any specific rule, the *exact* field values, and the *specific* glossary terms land at app-build time with the future John-equipped agent.
 
 So your job in Hamster is to **fix the shape, not the content**.
 
@@ -47,7 +47,7 @@ You'll see specific apps in your inputs (a sample slide deck, a sample doc-verif
 
 Tactically: when an input shows a specific schema field, generalize the *category* before fixing the *field*. ("`severity: low/medium/high`" — is severity always 3 levels, or does this domain sometimes have 5? Ask the user, or leave it flexible.) When an input shows a specific runtime step, generalize the *step's role* before fixing the *implementation*. ("Upload step accepts PDF" — is PDF always the format, or do future apps need DOCX too? Probably leave parser pluggable per `hamster-workshop`'s tool inventory.)
 
-This is the "trading some generalization for domain expertise, but not tipping too far" instinct from `CLAUDE.md`. The app-type definition is how you reason about where on that spectrum each call lands.
+This is the "trading some generalization for domain expertise, but not tipping too far" instinct from `HAMSTER.md`. The app-type definition is how you reason about where on that spectrum each call lands.
 
 ## When to ask the user
 
