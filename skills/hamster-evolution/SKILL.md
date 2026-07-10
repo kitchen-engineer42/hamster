@@ -42,13 +42,13 @@ Work like a workshop session, on the same machinery:
 2. **Bounded diff.** Edit the passages your chains name; keep everything else byte-identical. No wholesale rewrites of skills that mostly work — unbounded rewriting is the documented way text assets collapse. If more than roughly a third of a skill needs to change, stop and check with the owner whether this is evolution or a redesign.
 3. **Each change carries its evidence.** The changelog (see `references/evolution-changelog-format.md`) names, per change: the chain, the supporting runs (count, not corpus details), and the expected effect. Changes you considered and **rejected** get a line too — the next evolution session must not re-litigate them.
 4. **Check the feedback design while you're in there.** If the template lacks an `evolution` declaration (scorer / eval set / feedback design — see `hamster-packaging`, "Declaring evolution"), adding one is usually the highest-value change in v2: it's what upgrades the *next* cycle from process-evidence-only to scored.
-5. **Package** (`package_template.py`), set the version: minor bump for behavior-shaping changes, patch for fixes; update `requires_john` to the John version you actually validated against.
+5. **Package** with required `--template-version`, the exact John pin, declared providers, and `--smoke-test`. Minor bump for behavior-shaping changes, patch for fixes. Strict warnings publish nothing.
 
 ## The gate (before hand-off)
 
 - **Held-out check.** Re-run what can be re-run: apply vNext cleanly against the pinned John; scaffold a plan from it; run any template-shipped scorer/conformance checks; if a sample corpus is available, a sample build. Never score an edit only against the run that motivated it.
 - **Adversarial pass.** A second set of eyes (subagent reviewer is fine) attacks the diff: does any change contradict another? Does an edit re-teach (or fight) core methodology? Did corpus content or user identifiers leak into template text? Does every change have its chain?
-- **Conformance.** New/changed fan-out agents still match John's agent event contract; `[[refs]]` resolve; apply.sh untouched and in sync.
+- **Conformance.** New/changed fan-out agents use John's atomic event writer and run identity; `[[refs]]` resolve; the package contains the base-commit canonical executable `apply.sh` and its recorded checksum; shared provider outputs are hash-identical.
 - **Owner sign-off.** Present: the changelog, the rejected list, the escalations. The owner decides; team consensus can overwrite any threshold in this skill.
 
 ## What this skill does NOT do

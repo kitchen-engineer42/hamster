@@ -7,7 +7,7 @@ description: Read this at the start of every Hamster session. Use this skill whe
 
 You're vanilla Claude Code in a Hamster session. Hamster's job: build a John template — a diff against the original John plugin that purpose-builds the harness for a family of knowledge-engineering apps. This skill is the first thing to read when a session opens.
 
-`CLAUDE.md` at the working-dir root has the framing (three layers, scope, working agreements). Read it once, then come back here for the operational specifics — how to *start* a session well.
+The provider memory file at the working-dir root (`CLAUDE.md` or `AGENTS.md`) has the framing. Read it once, then come back here for the operational specifics.
 
 ## Three layers (vocabulary — this matters)
 
@@ -23,7 +23,7 @@ When the user gives you the initial prompt (joharnessburg path + inputs path + t
 
 1. **Read this skill + `CLAUDE.md`** if you haven't fully. They take a few minutes and prevent hours of misalignment.
 2. **Inventory the inputs** — `ls -la` the input folder. Note file types, sizes, names. Write your first note in `notes/` (any filename). Don't read the inputs deeply yet — dispatch subagents for that.
-3. **Skim joharnessburg's top-level structure** — but don't go deep. Confirm `$JOHARNESSBURG_PATH` exists and has `skills/`, `scripts/`, `templates/`, `.claude-plugin/`. Don't start reading 21 skill bodies one-by-one — that's later, under `hamster-workshop`.
+3. **Skim joharnessburg's top-level structure** — but don't go deep. Confirm `$JOHARNESSBURG_PATH/plugins/joharnessburg/` has `skills/`, `scripts/`, `templates/`, and both provider manifests. Don't start reading every skill body — that's later, under `hamster-workshop`.
 4. **Trigger `hamster-drawing-board`** by topic, not by command. Once you start classifying inputs as meta-vs-specific, the drawing-board skill should kick in. If it doesn't, read it manually.
 5. **Take notes liberally** as you go. Names are yours to choose. You'll come back.
 
@@ -38,7 +38,7 @@ This is not a rigid checklist — momentum and curiosity carry through. The poin
 | `forks/<template-name>/` | Your sandboxed John clone | **Yes, freely.** Created later by `scaffold_fork.py`. |
 | `templates/<template-name>/` | Packaged template diff | Yes, but produced by `package_template.py`, not by hand. |
 | `notes/` | Your scratch | **Yes, freely.** Free-form names. |
-| `.claude/skills/hamster-*/` | Hamster skills loaded into your session | No. Your own skills are sacred at runtime. |
+| `.claude/skills/hamster-*/` or `.agents/skills/hamster-*/` | Byte-identical Hamster skills loaded into your session | No. Your own skills are sacred at runtime. |
 
 The fork is your modified John. The template is the diff packaged for someone else to apply. You don't write the diff directly — you modify a clone, and the packager computes the diff.
 

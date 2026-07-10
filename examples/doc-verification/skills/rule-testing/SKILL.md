@@ -16,9 +16,9 @@ After Phase 3 produces per-rule skills, Phase 4 tests each one against labeled s
 
 ## The testing loop per rule
 
-For each rule-skill (at `<project>/.claude/skills/rule-R<id>/`):
+For each rule-skill (the byte-identical provider copies live at `<project>/.claude/skills/rule-R<id>/` and `<project>/.agents/skills/rule-R<id>/`):
 
-1. **Load the rule's samples**. They live at `<project>/.claude/skills/rule-R<id>/assets/samples/`. Each sample is labeled (`pass-N.md` or `fail-N.md`).
+1. **Load the rule's samples** from either provider copy and verify its tree hash matches the other copy. Each sample is labeled (`pass-N.md` or `fail-N.md`).
 
 2. **Run the rule's `check_R<id>.py` against each sample**. Capture: verdict, confidence, evidence, citation.
 

@@ -1,0 +1,40 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  stdlib-suite:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: hamster
+      - uses: actions/checkout@v4
+        with:
+          repository: kitchen-engineer42/joharnessburg
+          path: joharnessburg
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run stdlib tests
+        working-directory: hamster
+        run: python -m unittest discover -s tests -v
+      - name: Check shell syntax
+        working-directory: hamster
+        run: |
+          bash -n bootstrap_hamster.sh
+          bash -n examples/slides-from-textbook/apply.sh
+          bash -n examples/doc-verification/apply.sh
+      - name: Validate example templates
+        working-directory: hamster
+        run: |
+          python skills/hamster-packaging/scripts/validate_template.py examples/slides-from-textbook --john-install ../joharnessburg/plugins/joharnessburg --initialize
+          python skills/hamster-packaging/scripts/validate_template.py examples/doc-verification --john-install ../joharnessburg/plugins/joharnessburg --initialize

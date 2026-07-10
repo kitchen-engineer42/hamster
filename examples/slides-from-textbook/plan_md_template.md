@@ -9,7 +9,7 @@
 ## Knowledge inventory
 
 - Initial input: `.john/input/` (textbook PDF or markdown)
-- Produced skills (after the knowledge phases): `.claude/skills/` will contain per-slide concept entries + a glossary
+- Produced skills (after the knowledge phases): byte-identical `.claude/skills/` and `.agents/skills/` trees contain per-slide concept entries + a glossary
 
 ## App-type definition (pre-filled for slides)
 
@@ -53,7 +53,7 @@
 - Intent: extract per-slide concept entries from each chunk.
 - Skills to invoke: `knowledge-extraction`, `subagent-dispatch`, `event-log-and-reducer`
 - Required artifacts: `.john/events/extract/<chunk-id>/*.json`; `.john/checkpoints/extract/state.json`
-- Done criteria: every chunk has at least one entry_extracted event; reducer's canonical state has the expected entry count
+- Done criteria: every chunk has terminal extraction, coverage, and grounding events; reducer runs with `--require-extraction-audits`; `quality_gate.status` is `passed` and the accepted entry count matches the plan
 
 ### Phase 6: render + assemble (the app-phase deliverable)
 

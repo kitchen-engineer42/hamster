@@ -10,8 +10,8 @@
 
 - Initial input: `.john/input/` (regulation documents — laws, policies, internal rules)
 - Sample documents: `.john/samples/` (labeled documents for testing extracted rules)
-- Produced skills (after the knowledge phases): `.claude/skills/rule-R*/` — one skill per rule
-- Glossary: `.claude/skills/glossary/` — shared vocabulary
+- Produced skills (after the knowledge phases): byte-identical `.claude/skills/rule-R*/` and `.agents/skills/rule-R*/` — one skill per rule
+- Glossary: byte-identical `.claude/skills/glossary/` and `.agents/skills/glossary/`
 
 ## App-type definition (pre-filled for verification)
 
@@ -34,14 +34,14 @@
 - Intent: source-first sweep through regulation docs to extract every atomic rule with falsifiability + test_case_stub. Subagent fan-out per chunk.
 - Skills to invoke: `rule-extraction` (template-provided), `chunking`, `subagent-dispatch`, `event-log-and-reducer`
 - Required artifacts: `.john/checkpoints/extract/state.json` with N rules + glossary entries
-- Done criteria: every regulation chunk has at least one rule-extraction event (or an explicit "no rules in this chunk" event); coverage audit shows no obvious gaps
+- Done criteria: every regulation chunk has a terminal extraction event (or explicit no-rules event); coverage and grounding audits are newer than candidate mutations; reduction with `--require-extraction-audits` passes
 
 ### Phase 3: author skill per rule
 
-- Intent: for each rule, write its Claude Code skill (SKILL.md + check_R<id>.py + references + samples) per [[packaging]]'s override.
+- Intent: for each rule, write byte-identical Claude and Codex skills (SKILL.md + check_R<id>.py + references + samples) per [[packaging]]'s override.
 - Skills to invoke: `packaging` (template-overridden), `subagent-dispatch` (one subagent per rule)
-- Required artifacts: `<project>/.claude/skills/rule-R<id>/` for each rule
-- Done criteria: every rule from Phase 2 has a corresponding skill directory with all four files
+- Required artifacts: matching `<project>/.claude/skills/rule-R<id>/` and `<project>/.agents/skills/rule-R<id>/` for each rule
+- Done criteria: every accepted rule has both skill directories with matching hashes and all required files
 
 ### Phase 4: test rules against samples
 

@@ -21,15 +21,15 @@ Why this design: it lets you think in terms of "modify John" (which is intuitive
 
 Three access patterns, used together:
 
-1. **The bundled architecture summary** (`references/john_architecture.md`) — your always-have-in-mind baseline. Read it whenever you need to recall the layout, the 21 core skills, the hooks contract, the templates diff format, and (v0.4.0+) the Codex provider surface. Pinned to John v0.4.3. If your template adds fan-out agents, conform to the **agent event contract** section there — copy the event shapes from John core's `agents/knowledge-extractor.md` rather than inventing your own.
+1. **The bundled architecture summary** (`references/john_architecture.md`) — your always-have-in-mind baseline. Read it whenever you need the nested layout, hooks and event contracts, template format, or provider surfaces. It is pinned to John v0.5.0. If your template adds fan-out agents, use John's `emit_event.py`, run-ledger identity, and canonical agent-generation contract rather than inventing a parallel format.
 
-2. **Reference example templates** at `<hamster-checkout>/examples/{slides-from-textbook,doc-verification}/` (in your loaded Hamster repo, typically at `~/hamster-cli/examples/` or wherever the user installed Hamster). Each example is a complete template directory with `template.json`, `apply.sh`, `claude_addon.md`, `plan_md_template.md`, and `skills/_override/` + additive skill subdirs — i.e., exactly the shape your `package_template.py` output should have. Use them to ground your sense of the diff format before authoring. **Don't copy them wholesale** — they're functional demonstrators, not production-ready, and your template should be informed by your inputs, not by mimicking the example.
+2. **Reference example templates** at `<hamster-checkout>/examples/{slides-from-textbook,doc-verification}/`. Each is a complete v0.1.2 dual-provider template with exact John v0.5.0 pin, canonical `apply.sh`, preserved Claude guidance, Codex guidance/agents, overrides, and additive skills. Use them to understand the format, not as content to copy wholesale.
 
 3. **Live reads of `$JOHARNESSBURG_PATH`** — for skill bodies, script implementations, current hook behavior. Spawn subagents for deep reads. Don't load whole skill files into your main context unless you're about to override them.
 
 A good "read for deeper context" subagent call:
 
-> Read `$JOHARNESSBURG_PATH/skills/knowledge-extraction/SKILL.md` and any references it lists. Background: I'm designing a Hamster template for <X>. I need to know whether to override this skill or extend it. Report: (a) what the skill currently teaches, (b) any specific decisions baked in that might not fit my template's <X> use case, (c) the file size + reference list. Skip preamble; quote where useful.
+> Read `$JOHARNESSBURG_PATH/plugins/joharnessburg/skills/knowledge-extraction/SKILL.md` and any references it lists. Background: I'm designing a Hamster template for <X>. Report what it teaches, decisions that may not fit, and its reference list.
 
 Two or three subagents in parallel for the relevant skills, then synthesize.
 
@@ -39,14 +39,17 @@ When deciding how to make a change, ask:
 
 | You want to ... | Mechanism in the fork | Becomes in template |
 |---|---|---|
-| Replace a core skill's content entirely | Edit `<fork>/skills/<name>/SKILL.md` (and any of its `references/`, `scripts/`) | `skills/_override/<name>/` (full replacement) |
-| Add a brand-new skill | Create `<fork>/skills/<new-name>/SKILL.md` | `skills/<new-name>/` (additive) |
-| Add a script, command, or subagent | Create at `<fork>/scripts/<file>.py` (or `commands/<file>.md`, `agents/<file>.md`) | Same path in template (additive) |
-| Remove a core skill | Delete `<fork>/skills/<name>/` directory | `<name>` line appended to `skills/_delete` |
+| Replace a core skill's content entirely | Edit `<fork>/plugins/joharnessburg/skills/<name>/` | `skills/_override/<name>/` (full replacement) |
+| Add a brand-new skill | Create `<fork>/plugins/joharnessburg/skills/<new-name>/SKILL.md` | `skills/<new-name>/` (additive) |
+| Add a script, command, or Claude subagent | Create under `<fork>/plugins/joharnessburg/{scripts,commands,agents}/` | Same path in template (additive) |
+| Add a Codex agent | Generate/add `<fork>/plugins/joharnessburg/codex/agents/<name>.toml` | `codex/agents/<name>.toml` |
+| Remove a core skill | Delete `<fork>/plugins/joharnessburg/skills/<name>/` | `<name>` line appended to `skills/_delete` |
 | Ship a starter PLAN.md skeleton | Create `<fork>/plan_md_template.md` at fork root | `plan_md_template.md` at template root |
+| Ship shared provider guidance | Create `<fork>/project_addon.md` | `project_addon.md` at template root |
 | Ship CLAUDE.md guidance for the produced project | Create `<fork>/claude_addon.md` at fork root | `claude_addon.md` at template root |
+| Ship AGENTS.md guidance for the produced project | Create `<fork>/agents_addon.md` at fork root | `agents_addon.md` at template root |
 
-What the platform *doesn't* support — these will produce a `package_template.py` warning + skip:
+What the platform *doesn't* support — strict packaging stops on these warnings:
 
 | Change in the fork | Why the packager warns |
 |---|---|

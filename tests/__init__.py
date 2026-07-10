@@ -1,0 +1,1 @@
+"""Hamster stdlib test suite."""

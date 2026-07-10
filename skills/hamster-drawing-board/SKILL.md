@@ -84,7 +84,7 @@ Use AskUserQuestion or just prose. Don't sit on a decision waiting for it to cla
 You'll come back here mid-workshop. Examples:
 
 - While modifying a skill in the fork, you realize the schema should have an extra field. Come back, re-read the inputs to confirm.
-- After running `package_template.py --smoke-test`, you notice the app-type definitions don't quite fit the input you were targeting. Come back, classify again, adjust the fork.
+- After strict `package_template.py --template-version <version> --smoke-test`, the real application reveals the app-type definition does not fit. Come back, classify again, and adjust the fork.
 - The user provides a new input mid-session. Come back, re-classify, see if the template's shape needs to change.
 
 "Back to the drawing board" isn't failure — it's the natural rhythm of working in something this open-ended. Plan mode is the natural seam: pause the workshop, re-enter plan mode, re-read inputs, propose changes, exit plan mode, resume workshop.

@@ -2,7 +2,11 @@
 
 John ships a small set of **platform tools** — utilities that live at workspace level (not inside the plugin) and serve any template that needs them. Templates *use* these tools; templates do *not* ship them. If a template needs a tool the platform doesn't have, the right move is to surface the gap to the user (who decides whether to add it to the platform), not to bundle the tool inside the template.
 
-## Current platform tools (as of John v0.3.2)
+## Current external tools (John v0.5.0 workspace contract)
+
+These clients are gitignored workspace services. A fresh John or Hamster clone
+does not contain them. Do not make them template dependencies or claim that the
+repository provisions them.
 
 ### `local_clients/llm/` — workerLLM client
 
@@ -10,7 +14,7 @@ A FastAPI server wrapping SiliconFlow + DeepSeek (today; the URL contract is pro
 
 - **Plugin-side caller**: `$JOHN_LLM_CLIENT_URL` env var (default `http://localhost:8500`). The plugin's `workerllm-runtime` skill teaches layer-3 Claude how to call this.
 - **API contract** (live): see `$JOHARNESSBURG_PATH/../local_clients/llm/README.md` if the workspace is laid out as you expect, or browse `https://github.com/kitchen-engineer42/joharnessburg` issues/docs for the canonical contract.
-- **Endpoints**: `GET /healthz` (returns providers inventory), `POST /v1/chat/completions` (OpenAI-compatible).
+- **Endpoints**: `GET /healthz` (liveness), `GET /readyz` (provider readiness + capabilities), `POST /v1/chat/completions` (typed OpenAI-compatible subset). Malformed/unsupported fields return 422; streaming remains explicitly unsupported.
 - **When to embed in a template**: when produced apps need to call workerLLMs at runtime — for in-app inference, per-request classification, formatting, agentic flows. The `workerllm-runtime` skill is the integration point; templates rarely need to override it, only customize the prompts/models.
 - **When NOT to embed**: when the produced app is a static knowledge bundle (e.g., a slide-deck builder where all the LLM work happens during the build, not at app runtime). In that case the workerLLM is used during the BUILD phase by layer-3 Claude, but the produced app doesn't need to keep calling it.
 
@@ -20,7 +24,7 @@ A FastAPI server wrapping `memect-ppx` (the `ppx` engine).
 
 - **Plugin-side caller**: `$JOHN_PPX_CLIENT_URL` env var (default `http://localhost:8501`). The plugin's `parsing` skill + `scripts/ppx_parse.py` are the integration points.
 - **API contract** (live): see `local_clients/ppx/README.md` in the workspace.
-- **Endpoints**: `GET /healthz`, `POST /parse` (input_path, output_dir, backend, ocr, table — Pydantic-validated literals).
+- **Endpoints**: `GET /healthz` (liveness), `GET /readyz` (dependency readiness + capabilities), `POST /parse`. The destination must not exist; complete artifacts publish atomically and conflicts return 409. Parsing runs behind bounded concurrency while readiness remains responsive.
 - **When to embed in a template**: when produced apps (or the John build phase) need to parse PDFs — especially those with OCR, complex tables, or formula content. The parser is heavyweight; only reach for it when markitdown can't handle the format.
 - **When NOT to embed**: for non-PDF inputs (markdown, HTML, plaintext, DOCX), the `parsing` skill routes to `markitdown_parse.py` or `parse_govcn_html.py` instead. Don't force ppx where it adds latency without benefit.
 
@@ -60,7 +64,7 @@ This keeps the template portable. A template that hardcodes "use our specific in
 
 ## When this rots
 
-The tool list above is pinned to John v0.3.2. The platform may grow. To re-check:
+The tool list above is pinned to John v0.5.0. The external workspace may vary. To re-check:
 
 1. `ls $JOHARNESSBURG_PATH/../local_clients/` — see what clients exist locally.
 2. Check joharnessburg/PLAN.md for "out of scope" → those tools haven't landed yet.

@@ -65,8 +65,8 @@ You're allowed to *propose* changes outside scope. If a template idea needs a co
 3. **Drawing board** — `hamster-drawing-board` skill helps you ingest inputs. Dispatch explore subagents. Classify material as meta vs specific (at the content level, not the input-type level). Think in the app-type definition (knowledge format / knowledge schema / app mechanism / build pipeline). Take notes.
 4. **Plan mode** — enter Claude Code plan mode and propose template modifications. Use AskUserQuestion for choices that matter. Exit plan mode when the user signs off.
 5. **Workshop** — `hamster-workshop` skill plus `scaffold_fork.py` to create `forks/<name>/`. Modify John freely in the fork. Re-enter the drawing board (read inputs, take more notes) as needed — momentum carries through.
-6. **Packaging** — `hamster-packaging` skill plus `package_template.py` to produce `templates/<name>/`. Eyeball the output. Optionally run `--smoke-test`.
-7. **Hand off** — tell the user the template is ready. They review, decide if it's good enough, and distribute it to their team (each user installs it at `~/.claude/plugins/joharnessburg-templates/<name>/` and runs its `apply.sh`).
+6. **Packaging** — `hamster-packaging` plus strict `package_template.py --template-version <version> --provider both --smoke-test`. The script validates and real-applies in staging before atomic publication.
+7. **Hand off** — review the builder-side `forks/<name>/.hamster/package_summary.json`, then distribute only the published template. Claude runs `apply.sh`; Codex activates the merged result project-locally.
 
 The drawing-board / workshop divide isn't hard — they interleave naturally. Plan mode is the seam between "thinking" and "implementing", not a wall.
 

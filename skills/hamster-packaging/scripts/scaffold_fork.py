@@ -1,95 +1,100 @@
 #!/usr/bin/env python3
-"""Scaffold a Hamster fork — a local clone of joharnessburg for template work.
+"""Transactionally scaffold a clean John fork for a Hamster template build."""
 
-Usage:
-  python3 scaffold_fork.py --name <template-name>
-                            --joharnessburg-path <path>
-                            [--forks-root <path>]
-
-Creates <forks-root>/<name>/ as a git clone of <joharnessburg-path>, records
-the current HEAD commit to .hamster-base-commit, and prints next steps.
-
-The fork is your modified-John workspace. Edit files freely; package_template.py
-later computes the diff between .hamster-base-commit and the fork's working
-tree, and translates it into the canonical John template folder layout.
-"""
+from __future__ import annotations
 
 import argparse
+import shutil
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 
-
-def err(msg: str) -> None:
-    print(f"ERROR: {msg}", file=sys.stderr)
+from hamster_safety import atomic_text, contained, reject_symlinks, safe_slug
 
 
-def info(msg: str) -> None:
-    print(msg, file=sys.stderr)
+def git(source: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
+    return subprocess.run(
+        ["git", "-C", str(source), *args], capture_output=True, check=False
+    )
+
+
+def fail(message: str) -> int:
+    print(f"ERROR: {message}", file=sys.stderr)
+    return 1
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--name", required=True,
-                        help="Name of the fork dir (also the template name)")
-    parser.add_argument("--joharnessburg-path", required=True, type=Path,
-                        help="Path to the local joharnessburg checkout")
-    parser.add_argument("--forks-root", default=Path("forks"), type=Path,
-                        help="Where to put the fork (default: ./forks)")
+    parser.add_argument("--name", required=True)
+    parser.add_argument("--joharnessburg-path", required=True, type=Path)
+    parser.add_argument("--forks-root", default=Path("forks"), type=Path)
     args = parser.parse_args()
 
-    j_path: Path = args.joharnessburg_path.resolve()
-    forks_root: Path = args.forks_root.resolve()
-    fork_path = forks_root / args.name
+    try:
+        name = safe_slug(args.name, field="template name")
+        raw_source = args.joharnessburg_path.expanduser()
+        if raw_source.is_symlink():
+            raise ValueError(f"John source may not be a symlink: {raw_source}")
+        source = raw_source.resolve()
+        if not source.is_dir():
+            raise ValueError(f"John source is not a directory: {source}")
+        if git(source, "rev-parse", "--is-inside-work-tree").returncode != 0:
+            raise ValueError(f"John source is not a Git worktree: {source}")
+        status = git(source, "status", "--porcelain=v1", "-z")
+        if status.returncode != 0:
+            raise ValueError(status.stderr.decode("utf-8", "replace").strip())
+        if status.stdout:
+            raise ValueError(
+                "John source checkout is dirty; commit, stash, or remove all "
+                "tracked and untracked changes before scaffolding"
+            )
+        reject_symlinks(source, label="John source checkout")
 
-    if not j_path.exists() or not j_path.is_dir():
-        err(f"joharnessburg path does not exist or isn't a dir: {j_path}")
-        return 1
-    if not (j_path / ".git").exists():
-        err(f"joharnessburg path is not a git repo: {j_path}")
-        return 1
-    # Layout-agnostic plugin check: find a plugin.json anywhere in the tree.
-    # This handles both v0.1.12-style (plugin.json at .claude-plugin/) and
-    # v0.1.14+-style (plugin.json at plugins/<name>/.claude-plugin/) and any
-    # future layouts. The script itself doesn't care where in the tree the
-    # plugin lives — it just clones the whole repo.
-    plugin_manifests = list(j_path.glob("**/.claude-plugin/plugin.json"))
-    if not plugin_manifests:
-        err(f"joharnessburg path doesn't look like a Claude Code plugin "
-            f"(no .claude-plugin/plugin.json found under {j_path})")
-        return 1
+        manifests = sorted(source.glob("**/.claude-plugin/plugin.json"))
+        if not manifests:
+            raise ValueError("John source contains no .claude-plugin/plugin.json")
 
-    if fork_path.exists():
-        err(f"fork already exists: {fork_path}")
-        err("Refusing to overwrite. Either delete it or use a different --name.")
-        return 1
+        raw_root = args.forks_root.expanduser()
+        if raw_root.is_symlink():
+            raise ValueError(f"forks root may not be a symlink: {raw_root}")
+        root = raw_root.resolve()
+        destination = contained(root, root / name, label="fork destination")
+        if destination.exists():
+            raise ValueError(f"fork already exists: {destination}")
+    except ValueError as exc:
+        return fail(str(exc))
 
-    forks_root.mkdir(parents=True, exist_ok=True)
+    root.mkdir(parents=True, exist_ok=True)
+    stage = root / f".{name}.stage-{uuid.uuid4().hex}"
+    try:
+        result = subprocess.run(
+            ["git", "clone", "--no-hardlinks", "--", str(source), str(stage)],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(f"git clone failed: {result.stderr.strip()}")
+        head = git(stage, "rev-parse", "HEAD")
+        if head.returncode != 0:
+            raise RuntimeError(head.stderr.decode("utf-8", "replace").strip())
+        base_commit = head.stdout.decode("ascii").strip()
+        atomic_text(stage / ".hamster-base-commit", base_commit + "\n", mode=0o600)
+        reject_symlinks(stage, label="scaffolded fork")
+        stage.rename(destination)
+    except (OSError, RuntimeError, subprocess.TimeoutExpired, ValueError) as exc:
+        shutil.rmtree(stage, ignore_errors=True)
+        return fail(f"fork scaffold failed without publishing partial state: {exc}")
 
-    info(f"Cloning {j_path} → {fork_path} ...")
-    result = subprocess.run(
-        ["git", "clone", str(j_path), str(fork_path)],
-        capture_output=True, text=True
+    print(f"Fork ready: {destination}", file=sys.stderr)
+    print(f"Base commit: {base_commit[:12]}", file=sys.stderr)
+    print(
+        "Next: edit the fork, then package with --template-version X.Y.Z.",
+        file=sys.stderr,
     )
-    if result.returncode != 0:
-        err(f"git clone failed: {result.stderr}")
-        return 1
-
-    result = subprocess.run(
-        ["git", "-C", str(fork_path), "rev-parse", "HEAD"],
-        capture_output=True, text=True, check=True
-    )
-    base_commit = result.stdout.strip()
-    (fork_path / ".hamster-base-commit").write_text(base_commit + "\n")
-
-    info(f"\nFork ready at: {fork_path}")
-    info(f"Base commit: {base_commit[:12]}")
-    info(f"\nNext: edit files in {fork_path} to design your template.")
-    info(f"      When done: python3 package_template.py "
-         f"--fork {fork_path} --output templates/{args.name}")
-
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

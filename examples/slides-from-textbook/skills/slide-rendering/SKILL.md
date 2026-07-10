@@ -12,7 +12,7 @@ metadata:
 
 # slide-rendering (slides-from-textbook template)
 
-The app-phase side of a slides project. The knowledge phases produced per-slide concept entries at `<project>/.claude/skills/`. This skill maps each entry to a slide component, renders an HTML fragment, and assembles them into a single self-contained .html file.
+The app-phase side of a slides project. The knowledge phases produced byte-identical per-slide concept entries under `<project>/.claude/skills/` and `<project>/.agents/skills/`. This skill maps each entry to a slide component, renders an HTML fragment, and assembles them into a single self-contained .html file.
 
 ## The component types
 

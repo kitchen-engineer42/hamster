@@ -1,6 +1,6 @@
 ---
 name: packaging
-description: Emit each rule as a Claude Code skill at <project>/.claude/skills/rule-R<id>/ with SKILL.md + check_R<id>.py + references/ + assets/samples/. Use this skill in the per-rule authoring phase (Phase 3) of a doc-verification project. Overrides John core's general packaging with KC's per-rule shape.
+description: Emit each rule as byte-identical Claude and Codex skills under <project>/.claude/skills/rule-R<id>/ and <project>/.agents/skills/rule-R<id>/ with SKILL.md + check_R<id>.py + references/ + assets/samples/. Use this skill in the per-rule authoring phase of a doc-verification project.
 metadata:
   triggers:
     - package the rules
@@ -12,7 +12,7 @@ metadata:
 
 # packaging (doc-verification override)
 
-For doc-verification, each rule becomes one Claude Code skill at `<project>/.claude/skills/rule-R<id>/`. Drawn from KC's proven shape. Overrides John core's generic packaging.
+For doc-verification, each rule becomes the same skill at `<project>/.claude/skills/rule-R<id>/` and `<project>/.agents/skills/rule-R<id>/`. Build once in staging, verify the two trees have identical hashes, then publish without overwriting an existing target. Drawn from KC's proven shape. Overrides John core's generic packaging.
 
 ## Per-rule directory structure
 
@@ -31,7 +31,9 @@ For doc-verification, each rule becomes one Claude Code skill at `<project>/.cla
         └── ...
 ```
 
-Plus a separate glossary skill at `<project>/.claude/skills/glossary/SKILL.md` for shared terms.
+Publish that exact tree to `.agents/skills/rule-R<id>/` in the same transaction.
+
+Plus byte-identical glossary skills at `<project>/.claude/skills/glossary/SKILL.md` and `<project>/.agents/skills/glossary/SKILL.md` for shared terms.
 
 ## SKILL.md frontmatter per rule
 

@@ -36,7 +36,7 @@ For each regulation chunk (from the chunk phase), dispatch a subagent. Per chunk
 
 5. **Glossary identification**: every technical term the rule uses goes in the glossary. If you encounter a term, check if it's already in `.john/knowledge/glossary/`; if not, add it.
 
-6. **Emit events** to `<project>/.john/events/extract/<chunk-id>/`:
+6. **Emit events** by piping one JSON object at a time through John's `emit_event.py` with stable phase, chunk, agent, and audit-run IDs. Never choose or overwrite a raw event filename:
    - One `rule_extracted` event per rule, payload matching the rule schema.
    - One or more `glossary_term` events for new terms.
    - One `chunk_echo` event (see step 1).
@@ -50,7 +50,7 @@ Per [[subagent-dispatch]], brief each subagent with:
 - The specific chunk to process (path + ID).
 - The rule schema (from this template's `schema-design` override — paste the schema fields).
 - The source-first reminder ("don't peek at samples while extracting; that's Phase 4's job").
-- The output expectations (events to `<project>/.john/events/extract/<chunk-id>/`, JSON shape per the schema).
+- The output expectations (JSON shape per the schema, piped through `emit_event.py`; the writer publishes under `<project>/.john/events/extract/<chunk-id>/`).
 - The chunk_echo and incomplete_rule patterns.
 
 ## MECE coverage at end of phase
@@ -60,7 +60,7 @@ After fan-out completes and the reducer runs:
 1. **Mutually Exclusive**: no two rules describe the same precondition + verdict. The dedup pass in [[knowledge-rewrite]] catches this; spot-check.
 2. **Collectively Exhaustive**: every regulation chapter that should have rules does. Spot-check 5 random chapters; if any has zero rules and the chapter clearly contains prescriptive language, re-extract that chapter.
 
-Incomplete rules surface as a list in PLAN.md's Open Decisions. The user resolves each: extend the rule schema to handle the case, drop the rule as unenforceable, or accept ambiguity with a low confidence floor.
+After independent coverage and grounding summaries are emitted, reduce with `--require-extraction-audits`. Exit 4 or any non-passed `quality_gate` blocks advancement and excludes the failing chunk. Incomplete rules surface as a list in PLAN.md's Open Decisions. The user resolves each: extend the rule schema to handle the case, drop the rule as unenforceable, or accept ambiguity with a low confidence floor.
 
 ## What this skill does NOT do
 

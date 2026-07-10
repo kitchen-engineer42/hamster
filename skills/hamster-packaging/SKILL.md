@@ -1,152 +1,106 @@
 ---
 name: hamster-packaging
-description: Use when scaffolding the fork at the start of workshop work (scaffold_fork.py), when producing the template diff after you're done modifying (package_template.py), when the packager emits warnings and you need to decide what to do with them, or when eyeballing the packaged template before hand-off. Triggers on phrases like "ready to fork", "scaffold the fork", "time to package", "translate the diff", "package the template", "the template is ready", "what about this warning", or any time you're operating the two Hamster packaging scripts.
+description: Scaffold a clean John fork and transactionally package its supported diff as a strict, portable, dual-provider template. Use when creating the fork, translating a finished fork, choosing exact versions/providers, resolving packager warnings, validating relocation and real application, or reviewing `.hamster/package_summary.json` before handoff.
 ---
 
 # Hamster packaging
 
-This is where your modified John (the fork at `forks/<name>/`) becomes a packaged template diff at `templates/<name>/`. Two scripts do the work — you mostly just invoke them at the right moments.
+Hamster treats the fork as editable source and the template as a reproducible
+release artifact. Never edit a published template by hand.
 
-## scaffold_fork.py — create the fork
-
-Run this AT THE START of workshop work, before you start modifying anything:
+## Scaffold a clean fork
 
 ```sh
 python3 .claude/skills/hamster-packaging/scripts/scaffold_fork.py \
-  --name <template-name> \
+  --name <safe-template-slug> \
   --joharnessburg-path "$JOHARNESSBURG_PATH"
 ```
 
-What it does:
+The source checkout must be clean and symlink-free. The script validates the
+nested `plugins/<name>/.claude-plugin/plugin.json` layout, clones into a
+same-parent stage, records the immutable base commit, then atomically publishes
+`forks/<name>/`. A failure leaves no fork.
 
-- Validates `$JOHARNESSBURG_PATH` is a real joharnessburg checkout (has `.git` + `.claude-plugin/plugin.json`).
-- `git clone`s it into `forks/<template-name>/` (a local clone — same git history).
-- Records the current HEAD commit hash to `<fork>/.hamster-base-commit`.
-- Refuses to overwrite an existing fork — pick a different name or delete the old one first.
-
-Output: `forks/<template-name>/` is a complete writeable John clone. Start editing.
-
-## package_template.py — produce the template diff
-
-Run this when you're DONE modifying the fork and ready to produce the template:
+## Package the fork
 
 ```sh
 python3 .claude/skills/hamster-packaging/scripts/package_template.py \
-  --fork forks/<template-name> \
-  --output templates/<template-name> \
-  --description "Short description for template.json (optional)"
+  --fork forks/<name> \
+  --output templates/<name> \
+  --template-version 0.1.0 \
+  --provider both \
+  --smoke-test
 ```
 
-Optional flags:
+`--template-version` is required. `--requires-john` is optional and defaults to
+the exact version from the base-commit manifest. `--provider` is
+`claude|codex|both` and defaults to `both`. Use `--allow-warnings` only after the
+user explicitly accepts every recorded warning; strict mode publishes nothing
+when any warning exists.
 
-- `--apply-script <path>` — explicit path to `joharnessburg/templates/apply.sh` (default: `<fork>/templates/apply.sh`).
-- `--smoke-test` — after packaging, runs `apply.sh --help` to confirm it's executable.
+The packager:
 
-What it does:
+- reads NUL-delimited Git output with rename detection disabled, so a rename is
+  an explicit delete plus add;
+- rejects traversal and all source symlinks;
+- translates full skill overrides, additive skills/platform files, whole-skill
+  deletions, provider addons, Codex agents, and Claude workflow assets;
+- copies the base-commit canonical `apply.sh` as an executable regular file and
+  records its SHA-256;
+- validates metadata, exact pins, frontmatter, references, JSON/Python/shell/
+  TOML syntax, provider layouts, agent event contracts, release quality, and
+  relocation;
+- applies the staged template to a clean base-commit snapshot, and with
+  `--smoke-test` initializes a project from that applied plugin;
+- atomically publishes only after every gate passes.
 
-- Reads `.hamster-base-commit` from the fork.
-- Computes the diff between base commit and the fork's current state (committed AND uncommitted, including untracked files).
-- Classifies each changed path:
-  - Modified files inside an existing `skills/<name>/` → full skill dir copied to `skills/_override/<name>/`.
-  - New `skills/<new-name>/` → `skills/<new-name>/` additive.
-  - New file under `scripts/`, `commands/`, `agents/` → same path (additive).
-  - New `.js` file in the fork's `.claude/workflows/` (a saved dynamic workflow) → `workflows/<name>.js` (see below).
-  - Deleted `skills/<name>/` (whole dir) → `<name>` appended to `skills/_delete`. If the name is one of John's seven load-bearing core skills (using-john, ralph-loop, event-log-and-reducer, workspace-discipline, context-management, subagent-dispatch, skill-evolution), the packager stamps `# TODO: state why this core skill is deleted` on the line and warns — **replace the TODO with the actual reason before shipping**; John's apply step warns loudly on core deletions and extra-loudly when no reason is stated.
-  - `plan_md_template.md` or `claude_addon.md` at fork root → template root.
-  - `evolution.json` at fork root → folded into the generated `template.json` as the `evolution` block (the template's scorer/eval set + feedback design — see "Declaring evolution" below).
-  - Modifications to anything else → WARN, skip, record in summary.
-- Auto-generates `template.json` (name from output dir, version `0.1.0`, requires_john from current joharnessburg version).
-- Symlinks `apply.sh` from the canonical location (or copies on platforms without symlink support).
-- Writes `<output>/.hamster/package_summary.json` with base commit, every translation, every warning, timestamp.
+Warnings, every validation result, the base commit, translations, and apply
+checksum live only at `forks/<name>/.hamster/package_summary.json`. That file is
+builder-side provenance and never ships in the template. It contains no machine
+paths.
 
-Output: `templates/<template-name>/` is a valid John template folder, ready for the user to review and distribute (each user installs it at `~/.claude/plugins/joharnessburg-templates/<name>/` and runs its `apply.sh` — the John plugin itself ships no templates).
+## Supported fork changes
 
-## Declaring evolution (recommended for any template the team will iterate)
+| Fork change | Template output |
+|---|---|
+| Modify existing `plugins/<john>/skills/<name>/` | `skills/_override/<name>/` full replacement |
+| Add a skill | `skills/<name>/` |
+| Delete a whole skill | `skills/_delete` |
+| Add scripts, commands, or Claude agents | same additive path |
+| Add `plugins/<john>/codex/agents/*.toml` | `codex/agents/*.toml` |
+| Add root `project_addon.md` | shared CLAUDE.md + AGENTS.md guidance |
+| Add root `claude_addon.md` / `agents_addon.md` | provider-specific guidance |
+| Add root `plan_md_template.md` | starter PLAN.md |
+| Add `.claude/workflows/*.js` | preserved Claude workflow asset |
 
-A template that wants **Ring-1 evolution** (John v0.3.x: the template improves from accumulated run reports) ships its feedback design: put an `evolution.json` at the fork root —
+Platform files are additive-only. Hook, manifest, existing script/command/agent,
+local-client, and repository-doc modifications become warnings. Revert them or
+surface a core-John proposal.
 
-```json
-{
-  "scorer": "scripts/score_outputs.py — exact-match against the eval set",
-  "eval_set": "eval/held_out_cases.json (12 labeled cases, disjoint from examples)",
-  "feedback_design": "build-session eval on the held-out slice; end-user corrections at app runtime are the slow gold"
-}
-```
+For a load-bearing core-skill deletion, put the rationale in a fork-root
+`deletion_reasons.json`, keyed by skill name. The packager writes it as the
+same-line `_delete` reason and does not ship the declaration file.
 
-The packager folds it into `template.json` as the `evolution` block and warns if `scorer` or `feedback_design` is missing. No `evolution.json` = a gentle note, not an error — the template still works, but its worker skills can't be trained during builds and evolution runs on process evidence + lessons only. Design guidance (collection points, ground truth, judges that verify vs re-do): John core's `skill-evolution` skill, `references/feedback-design.md`.
+## Provider contract
 
-## Shipping a saved workflow (optional, research preview)
+Do not convert Claude assets with a Hamster-specific converter. Claude
+`agents/*.md` remain canonical; use John's deterministic agent sync contract to
+produce matching template `codex/agents/*.toml`. A dual-provider package
+requires a Codex counterpart for every additive Claude agent, while allowing
+Codex-only agents. Shared produced skills must be byte-identical under
+`.claude/skills/` and `.agents/skills/`.
 
-Most templates don't need this — John core ships the `vertical-workflows` skill so layer-3 Claude authors the right fan-out live per project. But if your domain has a **stable** sweep shape (a rule × chapter sweep, a per-slide render), you can freeze it as a saved workflow and ship it.
+Claude workflows remain untouched. Codex high-volume guidance consumes John's
+`.john/runs` manifest/receipt/event barriers and native wave engine; it may use
+the experimental CSV engine only after capability detection.
 
-To author one: while modifying the fork, run the sweep as a dynamic workflow, then save the run's script (Claude Code saves it to the project's `.claude/workflows/<name>.js`). The packager picks up new `.claude/workflows/*.js` files and copies them into the template's `workflows/`; at runtime `/john:init` installs them into the user's project `.claude/workflows/`, where they register as `/<name>` commands.
+## Review and handoff
 
-Keep it shape-only — encode the fan-out *structure*, not one corpus's specifics (same discipline as `plan_md_template.md`). And treat it as graceful: it requires the user's Claude Code to support workflows, and Claude can always re-author live if it's absent.
+Read the builder-side summary and confirm `status: published`, zero unaccepted
+warnings, a passing `validation`, the intended exact John pin/providers, and
+the expected apply checksum. Then inspect the published template. The Claude
+flow remains `apply.sh` plus `claude --plugin-dir`; the Codex flow applies first,
+then uses John's project-local activation skill. Applied John replaces vanilla
+John in that project session.
 
-## What to do with warnings
-
-If `package_template.py` emits warnings, it means changes in the fork couldn't be translated to the template diff format. Common cases:
-
-- **Modified `scripts/<file>.py`** — templates can't override scripts. Revert in fork, or surface to user as a core-John PR proposal.
-- **Modified `hooks/hooks.json`** — hooks are platform infrastructure. Same options.
-- **Modified `.claude-plugin/plugin.json`** — the manifest belongs to the platform.
-- **Deletions outside `skills/`** — `_delete` only supports whole-skill deletions.
-
-For each warning, decide: revert in fork, escalate to user, or find an in-scope alternative. See `hamster-workshop/SKILL.md` for the in-scope alternatives.
-
-## Reading the package summary
-
-`templates/<name>/.hamster/package_summary.json` is your audit trail. Read it after packaging to confirm:
-
-- `base_commit` matches what you scaffolded against (you can `git log` the fork against it).
-- `translations` covers every intended change.
-- `warnings` is empty, OR every warning has been consciously decided about.
-- `requires_john` matches the version you actually used.
-
-If anything's off, fix it (re-edit the fork, re-package) before handing off.
-
-## Eyeballing the template before hand-off
-
-After `package_template.py` succeeds, look at `templates/<name>/`:
-
-- `template.json` — confirm name, description, requires_john are right; if the team will iterate this template, confirm the `evolution` block landed (scorer + feedback design).
-- `apply.sh` — should be a symlink (or copy on Windows).
-- `skills/_override/<name>/` — each override should be a complete skill dir (SKILL.md + any references/).
-- `skills/<new-name>/` — same; complete skill dirs.
-- `skills/_delete` — list of names, one per line; same-line `name # reason` comments supported (a reason is expected for core-skill deletions).
-- `workflows/<name>.js` — any saved dynamic workflows the template ships (optional).
-- `plan_md_template.md`, `claude_addon.md` — what layer-3 Claude reads at runtime.
-
-If anything looks wrong, return to the fork, fix, delete `templates/<name>/`, re-package.
-
-## The smoke test
-
-`--smoke-test` invokes `apply.sh --help` and prints the exit code. It's a sanity check (does apply.sh run at all), not a real validation. For a proper test, apply the template against a real joharnessburg-applied dir manually:
-
-```sh
-cd templates/<name>
-./apply.sh --plugin-dir ~/.claude/plugins/joharnessburg-applied/<name>-test
-```
-
-Confirm:
-
-- It exits 0.
-- `~/.claude/plugins/joharnessburg-applied/<name>-test/skills/` has overrides applied and additive skills present.
-- `templates-active/plan_md_template.md` and `claude_addon.md` are populated if your template ships them.
-
-`references/packaging_walkthrough.md` has the full 10-step packaging session walkthrough.
-
-## When this skill triggers
-
-- You're starting workshop work and need to create the fork → use `scaffold_fork.py`.
-- You're done modifying the fork and want to produce the template → use `package_template.py`.
-- The packager emitted warnings and you need to decide what to do.
-- You want to eyeball-verify the packaged template before hand-off.
-
-If you're still designing what to change (not done modifying), the trigger is `hamster-drawing-board` or `hamster-workshop`.
-
-## When you're done packaging
-
-Tell the user: "Template packaged at `templates/<template-name>/`. Base commit: `<short-hash>`. Translations: N. Warnings: 0 (or N with details in the summary). Ready for your review."
-
-The user will eyeball, possibly test against a real joharnessburg-applied dir, and distribute it when satisfied (team users install it at `~/.claude/plugins/joharnessburg-templates/<name>/`).
+See `references/packaging_walkthrough.md` for a complete command sequence.
